@@ -9,7 +9,7 @@
       <top-bar id="topbar-container" class="topbar-container" />
     </template>
     <div class="right-menu">
-      <template v-if="device!=='mobile'">
+      <template v-if="device !== 'mobile'">
         <search id="header-search" class="right-menu-item" />
 
         <el-tooltip content="源码地址" effect="dark" placement="bottom">
@@ -25,27 +25,57 @@
         <el-tooltip content="布局大小" effect="dark" placement="bottom">
           <size-select id="size-select" class="right-menu-item hover-effect" />
         </el-tooltip>
-
       </template>
 
-      <el-dropdown class="avatar-container right-menu-item hover-effect" trigger="hover">
-        <div class="avatar-wrapper">
+      <el-dropdown class="hospital-container right-menu-item hover-effect" trigger="click" @command="handleHospitalCommand">
+        <div class="hospital-wrapper">
           <img :src="avatar" class="user-avatar">
-          <span class="user-nickname"> {{ nickName }} </span>
+          <span class="hospital-name">{{ currentHospitalName }}</span>
+          <el-tag size="mini" effect="plain">{{ currentRoleName }}</el-tag>
+          <i class="el-icon-arrow-down el-icon--right"></i>
         </div>
-        <el-dropdown-menu slot="dropdown">
+        <el-dropdown-menu slot="dropdown" class="hospital-dropdown">
+          <div class="hospital-dropdown-header">
+            <div class="hospital-dropdown-info">
+              <div class="hospital-dropdown-name">{{ currentHospitalName }}</div>
+              <div class="hospital-dropdown-account">登录账号：{{ currentAccount }}</div>
+            </div>
+            <el-button
+              v-if="myHospitals.length > 1"
+              type="text"
+              icon="el-icon-sort"
+              class="hospital-dropdown-switch"
+              @click.stop="switchOpen = true"
+            >切换</el-button>
+          </div>
           <router-link to="/user/profile">
-            <el-dropdown-item>个人中心</el-dropdown-item>
+            <el-dropdown-item icon="el-icon-user">个人中心</el-dropdown-item>
           </router-link>
-          <el-dropdown-item @click.native="setLayout" v-if="setting">
-            <span>布局设置</span>
-          </el-dropdown-item>
-          <el-dropdown-item divided @click.native="logout">
+          <el-dropdown-item v-if="showSystemLayoutSetting" icon="el-icon-setting" command="layout">布局设置</el-dropdown-item>
+          <el-dropdown-item divided icon="el-icon-switch-button" command="logout">
             <span>退出登录</span>
           </el-dropdown-item>
         </el-dropdown-menu>
       </el-dropdown>
     </div>
+    <el-dialog title="切换医院" :visible.sync="switchOpen" width="520px" append-to-body>
+      <div class="hospital-select-list">
+        <div
+          v-for="item in myHospitals"
+          :key="item.hospitalUserId"
+          class="hospital-select-item"
+          :class="{ current: item.isCurrent === '1' }"
+          @click="item.isCurrent === '1' ? null : switchHospital(item.hospitalUserId)"
+        >
+          <div>
+            <div class="hospital-select-name">{{ item.hospitalName }}</div>
+            <div class="hospital-select-meta">{{ roleLevelName(item.roleLevel, item.isAdmin) }} · {{ item.deptName || '未分配部门' }}</div>
+          </div>
+          <el-tag v-if="item.isCurrent === '1'" size="mini">当前医院</el-tag>
+          <el-button v-else type="primary" size="mini">进入</el-button>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -61,6 +91,7 @@ import SizeSelect from '@/components/SizeSelect'
 import Search from '@/components/HeaderSearch'
 import DhsUiGit from '@/components/DhsUi/Git'
 import DhsUiDoc from '@/components/DhsUi/Doc'
+import { listMyHospitals, switchHospital } from '@/api/medical/hospital'
 
 export default {
   emits: ['setLayout'],
@@ -76,17 +107,29 @@ export default {
     DhsUiGit,
     DhsUiDoc
   },
+  data() {
+    return {
+      myHospitals: [],
+      switchOpen: false
+    }
+  },
   computed: {
     ...mapGetters([
       'sidebar',
       'avatar',
       'device',
-      'nickName'
+      'name',
+      'nickName',
+      'roles',
+      'permissions'
     ]),
     setting: {
       get() {
         return this.$store.state.settings.showSettings
       }
+    },
+    showSystemLayoutSetting() {
+      return this.setting && (this.roles.includes('admin') || this.permissions.includes('*:*:*'))
     },
     navType: {
       get() {
@@ -97,14 +140,62 @@ export default {
       get() {
         return this.$store.state.settings.sidebarLogo
       }
+    },
+    currentHospitalUser() {
+      return this.myHospitals.find(item => item.isCurrent === '1') || {}
+    },
+    currentHospitalName() {
+      return this.currentHospitalUser.hospitalName || '未选择医院'
+    },
+    currentRoleName() {
+      return this.roleLevelName(this.currentHospitalUser.roleLevel, this.currentHospitalUser.isAdmin)
+    },
+    currentAccount() {
+      return this.currentHospitalUser.phonenumber || this.name
     }
+  },
+  created() {
+    this.loadMyHospitals()
   },
   methods: {
     toggleSideBar() {
       this.$store.dispatch('app/toggleSideBar')
     },
-    setLayout(event) {
+    setLayout() {
       this.$emit('setLayout')
+    },
+    loadMyHospitals() {
+      listMyHospitals().then(response => {
+        this.myHospitals = response.data || []
+      }).catch(() => {
+        this.myHospitals = []
+      })
+    },
+    handleHospitalCommand(command) {
+      if (!command) {
+        return
+      }
+      if (command === 'logout') {
+        this.logout()
+        return
+      }
+      if (command === 'layout') {
+        this.setLayout()
+        return
+      }
+    },
+    switchHospital(hospitalUserId) {
+      switchHospital(hospitalUserId).then(() => {
+        this.$modal.msgSuccess('医院切换成功')
+        window.location.reload()
+      })
+    },
+    roleLevelName(roleLevel, isAdmin) {
+      if (isAdmin === '1') {
+        return '超级管理员'
+      }
+      const map = { 0: '超级管理员', 10: '合伙人', 20: '管理员', 30: '员工' }
+      return map[roleLevel] || '成员'
     },
     logout() {
       this.$confirm('确定注销并退出系统吗？', '提示', {
@@ -133,10 +224,9 @@ export default {
   overflow: hidden;
   position: relative;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0,21,41,.08);
+  box-shadow: 0 1px 4px rgba(0, 21, 41, .08);
   display: flex;
   align-items: center;
-  // padding: 0 8px;
   box-sizing: border-box;
 
   .hamburger-container {
@@ -144,14 +234,14 @@ export default {
     height: 100%;
     cursor: pointer;
     transition: background .3s;
-    -webkit-tap-highlight-color:transparent;
+    -webkit-tap-highlight-color: transparent;
     display: flex;
     align-items: center;
     flex-shrink: 0;
     margin-right: 8px;
 
     &:hover {
-      background: rgba(0, 0, 0, .025)
+      background: rgba(0, 0, 0, .025);
     }
   }
 
@@ -171,11 +261,6 @@ export default {
     align-items: center;
     overflow: hidden;
     margin-left: 8px;
-  }
-
-  .errLog-container {
-    display: inline-block;
-    vertical-align: top;
   }
 
   .right-menu {
@@ -202,44 +287,103 @@ export default {
         transition: background .3s;
 
         &:hover {
-          background: rgba(0, 0, 0, .025)
+          background: rgba(0, 0, 0, .025);
         }
       }
     }
 
-    .avatar-container {
-      margin-right: 0px;
-      padding-right: 0px;
+    .hospital-container {
+      padding: 0 12px 0 8px;
 
-      .avatar-wrapper {
-        margin-top: 10px;
-        right: 8px;
-        position: relative;
+      .hospital-wrapper {
+        height: 50px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
 
         .user-avatar {
-          cursor: pointer;
-          width: 30px;
-          height: 30px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
         }
 
-        .user-nickname{
-          position: relative;
-          bottom: 10px;
-          left: 2px;
+        .hospital-name {
+          max-width: 180px;
+          overflow: hidden;
+          text-overflow: ellipsis;
           font-size: 14px;
-          font-weight: bold;
-        }
-
-        .el-icon-caret-bottom {
-          cursor: pointer;
-          position: absolute;
-          right: -20px;
-          top: 25px;
-          font-size: 12px;
+          font-weight: 600;
+          color: #303133;
         }
       }
     }
   }
+}
+
+.hospital-dropdown {
+  min-width: 260px;
+}
+
+.hospital-dropdown-header {
+  padding: 10px 16px 8px 16px;
+  border-bottom: 1px solid #ebeef5;
+  line-height: 1.6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hospital-dropdown-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.hospital-dropdown-account {
+  font-size: 12px;
+  color: #606266;
+}
+
+.hospital-dropdown-info {
+  min-width: 0;
+}
+
+.hospital-dropdown-switch {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.hospital-select-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hospital-select-item {
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+
+  &.current {
+    cursor: default;
+    background: #f5f7fa;
+  }
+}
+
+.hospital-select-name {
+  font-weight: 600;
+  color: #303133;
+}
+
+.hospital-select-meta {
+  margin-top: 6px;
+  color: #909399;
+  font-size: 12px;
 }
 </style>

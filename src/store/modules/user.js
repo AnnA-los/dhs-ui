@@ -51,7 +51,7 @@ const user = {
         login(username, password, code, uuid).then(res => {
           setToken(res.token)
           commit('SET_TOKEN', res.token)
-          resolve()
+          resolve(res)
         }).catch(error => {
           reject(error)
         })
