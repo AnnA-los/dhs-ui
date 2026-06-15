@@ -76,21 +76,7 @@
           <div class="info-content"><strong>{{ user.userId || '-' }}</strong></div>
         </div>
         <div class="info-cell">
-          <span class="info-label">用户名</span>
-          <div class="info-content">
-            <template v-if="editingField === 'userName'">
-              <el-input v-model="editValue" size="mini" class="inline-input" />
-              <el-button type="text" icon="el-icon-check" @click="saveUserField('userName', editValue)">确认</el-button>
-              <el-button type="text" icon="el-icon-close" @click="cancelEdit">取消</el-button>
-            </template>
-            <template v-else>
-              <strong>{{ user.userName || '-' }}</strong>
-              <el-button type="text" icon="el-icon-edit" @click="startEdit('userName', user.userName)" />
-            </template>
-          </div>
-        </div>
-        <div class="info-cell">
-          <span class="info-label">用户名称</span>
+          <span class="info-label">昵称</span>
           <div class="info-content">
             <template v-if="editingField === 'nickName'">
               <el-input v-model="editValue" size="mini" class="inline-input" />
@@ -213,6 +199,7 @@ export default {
       user: {},
       currentHospital: {},
       currentInvite: {},
+      inviteAccess: false,
       myHospitals: [],
       editingField: '',
       editValue: '',
@@ -245,13 +232,18 @@ export default {
       return this.currentHospitalUser.isAdmin === '1'
     },
     canViewInvite() {
-      return this.canEditHospital || this.permissions.includes('medical:hospital:invite:add')
+      return this.canEditHospital || this.inviteAccess || this.permissions.includes('medical:hospital:invite:self')
     }
   },
   created() {
-    this.reload()
+    this.refreshUserPermission()
   },
   methods: {
+    refreshUserPermission() {
+      this.$store.dispatch('GetInfo').finally(() => {
+        this.reload()
+      })
+    },
     reload() {
       getUserProfile().then(response => { this.user = response.data || {} })
       getCurrentHospital().then(response => { this.currentHospital = response.data || {} })
@@ -261,10 +253,14 @@ export default {
       })
     },
     getInviteInfo() {
-      if (!this.canViewInvite) {
-        return
-      }
-      getCurrentHospitalInvite().then(response => { this.currentInvite = response.data || {} }).catch(() => { this.currentInvite = {} })
+      this.inviteAccess = false
+      getCurrentHospitalInvite().then(response => {
+        this.currentInvite = response.data || {}
+        this.inviteAccess = true
+      }).catch(() => {
+        this.currentInvite = {}
+        this.inviteAccess = false
+      })
     },
     startEdit(field, value) {
       this.editingField = field

@@ -12,19 +12,42 @@
       <template v-if="device !== 'mobile'">
         <search id="header-search" class="right-menu-item" />
 
-        <el-tooltip content="源码地址" effect="dark" placement="bottom">
+        <el-tooltip v-if="showSystemTools" content="源码地址" effect="dark" placement="bottom">
           <dhs-ui-git id="dhs-ui-git" class="right-menu-item hover-effect" />
         </el-tooltip>
 
-        <el-tooltip content="文档地址" effect="dark" placement="bottom">
+        <el-tooltip v-if="showSystemTools" content="文档地址" effect="dark" placement="bottom">
           <dhs-ui-doc id="dhs-ui-doc" class="right-menu-item hover-effect" />
         </el-tooltip>
 
-        <screenfull id="screenfull" class="right-menu-item hover-effect" />
+        <screenfull v-if="showSystemTools" id="screenfull" class="right-menu-item hover-effect" />
 
-        <el-tooltip content="布局大小" effect="dark" placement="bottom">
+        <el-tooltip v-if="showSystemTools" content="布局大小" effect="dark" placement="bottom">
           <size-select id="size-select" class="right-menu-item hover-effect" />
         </el-tooltip>
+
+        <el-popover v-if="showHospitalNotification" placement="bottom-end" width="360" trigger="click" popper-class="hospital-notification-popper" class="notification-popover" @show="loadNotifications">
+          <div class="notification-panel">
+            <div class="notification-title">医院通知</div>
+            <div v-if="notifications.length === 0" class="notification-empty">暂无通知</div>
+            <div
+              v-for="item in notifications"
+              :key="item.notificationId"
+              class="notification-item"
+              :class="{ unread: item.readStatus === '0' }"
+              @click="markNotificationRead(item)"
+            >
+              <div class="notification-item-title">{{ item.noticeTitle }}</div>
+              <div class="notification-item-content">{{ item.noticeContent }}</div>
+              <div class="notification-item-time">{{ item.createTime }}</div>
+            </div>
+          </div>
+          <span slot="reference" class="right-menu-item hover-effect notification-trigger">
+            <el-badge :value="unreadNotifications" :hidden="!unreadNotifications" :max="99">
+              <i class="el-icon-bell"></i>
+            </el-badge>
+          </span>
+        </el-popover>
       </template>
 
       <el-dropdown class="hospital-container right-menu-item hover-effect" trigger="click" @command="handleHospitalCommand">
@@ -64,14 +87,14 @@
           v-for="item in myHospitals"
           :key="item.hospitalUserId"
           class="hospital-select-item"
-          :class="{ current: item.isCurrent === '1' }"
-          @click="item.isCurrent === '1' ? null : switchHospital(item.hospitalUserId)"
+          :class="{ current: isCurrentHospital(item) }"
+          @click="isCurrentHospital(item) ? null : switchHospital(item.hospitalUserId)"
         >
           <div>
             <div class="hospital-select-name">{{ item.hospitalName }}</div>
             <div class="hospital-select-meta">{{ roleLevelName(item.roleLevel, item.isAdmin) }} · {{ item.deptName || '未分配部门' }}</div>
           </div>
-          <el-tag v-if="item.isCurrent === '1'" size="mini">当前医院</el-tag>
+          <el-tag v-if="isCurrentHospital(item)" size="mini">当前医院</el-tag>
           <el-button v-else type="primary" size="mini">进入</el-button>
         </div>
       </div>
@@ -91,7 +114,8 @@ import SizeSelect from '@/components/SizeSelect'
 import Search from '@/components/HeaderSearch'
 import DhsUiGit from '@/components/DhsUi/Git'
 import DhsUiDoc from '@/components/DhsUi/Doc'
-import { listMyHospitals, switchHospital } from '@/api/medical/hospital'
+import { getCurrentHospital, listMyHospitals, switchHospital } from '@/api/medical/hospital'
+import { mineHospitalNotifications, readHospitalNotification } from '@/api/medical/hospitalNotification'
 
 export default {
   emits: ['setLayout'],
@@ -109,7 +133,10 @@ export default {
   },
   data() {
     return {
+      currentHospital: {},
       myHospitals: [],
+      notifications: [],
+      unreadNotifications: 0,
       switchOpen: false
     }
   },
@@ -131,6 +158,12 @@ export default {
     showSystemLayoutSetting() {
       return this.setting && (this.roles.includes('admin') || this.permissions.includes('*:*:*'))
     },
+    showSystemTools() {
+      return this.roles.includes('admin') || this.permissions.includes('*:*:*')
+    },
+    showHospitalNotification() {
+      return !this.showSystemTools && this.currentHospitalUser.isAdmin === '1'
+    },
     navType: {
       get() {
         return this.$store.state.settings.navType
@@ -142,10 +175,10 @@ export default {
       }
     },
     currentHospitalUser() {
-      return this.myHospitals.find(item => item.isCurrent === '1') || {}
+      return this.myHospitals.find(item => this.isCurrentHospital(item)) || this.myHospitals.find(item => item.hospitalId === this.currentHospital.hospitalId) || {}
     },
     currentHospitalName() {
-      return this.currentHospitalUser.hospitalName || '未选择医院'
+      return this.currentHospital.hospitalName || this.currentHospitalUser.hospitalName || '未选择医院'
     },
     currentRoleName() {
       return this.roleLevelName(this.currentHospitalUser.roleLevel, this.currentHospitalUser.isAdmin)
@@ -165,11 +198,20 @@ export default {
       this.$emit('setLayout')
     },
     loadMyHospitals() {
+      getCurrentHospital().then(response => {
+        this.currentHospital = response.data || {}
+      }).catch(() => {
+        this.currentHospital = {}
+      })
       listMyHospitals().then(response => {
         this.myHospitals = response.data || []
+        this.loadNotifications()
       }).catch(() => {
         this.myHospitals = []
       })
+    },
+    isCurrentHospital(item) {
+      return item && (item.isCurrent === '1' || item.isCurrent === 1 || item.hospitalId === this.currentHospital.hospitalId)
     },
     handleHospitalCommand(command) {
       if (!command) {
@@ -188,6 +230,29 @@ export default {
       switchHospital(hospitalUserId).then(() => {
         this.$modal.msgSuccess('医院切换成功')
         window.location.reload()
+      })
+    },
+    loadNotifications() {
+      if (!this.showHospitalNotification) {
+        this.notifications = []
+        this.unreadNotifications = 0
+        return
+      }
+      mineHospitalNotifications().then(response => {
+        this.notifications = response.rows || []
+        this.unreadNotifications = response.unread || 0
+      }).catch(() => {
+        this.notifications = []
+        this.unreadNotifications = 0
+      })
+    },
+    markNotificationRead(item) {
+      if (!item || item.readStatus !== '0') {
+        return
+      }
+      readHospitalNotification(item.notificationId).then(() => {
+        item.readStatus = '1'
+        this.unreadNotifications = Math.max(0, this.unreadNotifications - 1)
       })
     },
     roleLevelName(roleLevel, isAdmin) {
@@ -382,6 +447,88 @@ export default {
 }
 
 .hospital-select-meta {
+  margin-top: 6px;
+  color: #909399;
+  font-size: 12px;
+}
+
+.notification-trigger {
+  height: 50px;
+  line-height: 50px;
+  vertical-align: middle;
+}
+
+.notification-popover {
+  height: 50px;
+  line-height: 50px;
+  display: inline-block;
+}
+
+.notification-trigger ::v-deep .el-badge {
+  line-height: 50px;
+  vertical-align: middle;
+}
+
+.notification-trigger ::v-deep .el-badge__content {
+  top: 9px;
+}
+
+.notification-trigger i {
+  font-size: 22px;
+  font-weight: 700;
+  -webkit-text-stroke: 1px #5a5e66;
+  vertical-align: middle;
+}
+
+.notification-panel {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.notification-title {
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #ebeef5;
+  font-weight: 600;
+  color: #303133;
+}
+
+.notification-empty {
+  padding: 24px 0;
+  text-align: center;
+  color: #909399;
+}
+
+.notification-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f2f5;
+  cursor: pointer;
+}
+
+.notification-item.unread .notification-item-title::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #f56c6c;
+  vertical-align: middle;
+}
+
+.notification-item-title {
+  font-weight: 600;
+  color: #303133;
+}
+
+.notification-item-content {
+  margin-top: 6px;
+  color: #606266;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.notification-item-time {
   margin-top: 6px;
   color: #909399;
   font-size: 12px;

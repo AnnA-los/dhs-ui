@@ -154,9 +154,23 @@ export default {
       })
     },
     getMenuTreeselect() {
-      treeselect().then(response => {
-        this.menuOptions = response.data || []
+      treeselect({ status: '0' }).then(response => {
+        this.menuOptions = this.filterInviteManagePermissions(response.data || [])
       })
+    },
+    filterInviteManagePermissions(nodes) {
+      const hiddenLabels = ['邀请码查询', '邀请码新增', '邀请码修改', '邀请码删除', '个人邀请码查询', '个人邀请码生成']
+      return nodes.reduce((list, node) => {
+        if (hiddenLabels.includes(node.label)) {
+          return list
+        }
+        const item = Object.assign({}, node)
+        if (item.children && item.children.length) {
+          item.children = this.filterInviteManagePermissions(item.children)
+        }
+        list.push(item)
+        return list
+      }, [])
     },
     getCheckedMenuIds() {
       const checkedKeys = this.$refs.menu ? this.$refs.menu.getCheckedKeys() : []

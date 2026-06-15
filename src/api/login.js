@@ -58,3 +58,22 @@ export function getCodeImg() {
     timeout: 20000
   })
 }
+
+// 系统超管登录方法
+export function adminLogin(username, password, code, uuid) {
+  const data = {
+    username,
+    password,
+    code,
+    uuid
+  }
+  return request({
+    url: '/adminLogin',
+    headers: {
+      isToken: false,
+      repeatSubmit: false
+    },
+    method: 'post',
+    data: data
+  })
+}
