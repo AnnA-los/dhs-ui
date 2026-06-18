@@ -92,6 +92,19 @@ export const constantRoutes = [
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
+  },
+  {
+    path: '/medical/visitUsage',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/medical/visitUsage/index'),
+        name: 'MedicalVisitUsage',
+        meta: { title: '收费明细', activeMenu: '/medical/visit' }
+      }
+    ]
   }
 ]
 

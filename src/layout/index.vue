@@ -70,6 +70,7 @@ export default {
     position: relative;
     height: 100%;
     width: 100%;
+    background: #f8eef7;
 
     &.mobile.openSidebar {
       position: fixed;
@@ -80,6 +81,7 @@ export default {
   .main-container:has(.fixed-header) {
     height: 100vh;
     overflow: hidden;
+    background: #f8eef7;
   }
 
   .drawer-bg {

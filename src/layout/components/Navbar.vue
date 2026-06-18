@@ -288,8 +288,8 @@ export default {
   height: 50px;
   overflow: hidden;
   position: relative;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, .08);
+  background: #fbf3fa;
+  box-shadow: 0 1px 4px rgba(137, 82, 124, .12);
   display: flex;
   align-items: center;
   box-sizing: border-box;
@@ -379,7 +379,7 @@ export default {
           text-overflow: ellipsis;
           font-size: 14px;
           font-weight: 600;
-          color: #303133;
+          color: #5b3753;
         }
       }
     }
@@ -437,7 +437,7 @@ export default {
 
   &.current {
     cursor: default;
-    background: #f5f7fa;
+    background: #f8eef7;
   }
 }
 
@@ -501,7 +501,7 @@ export default {
 
 .notification-item {
   padding: 10px 0;
-  border-bottom: 1px solid #f0f2f5;
+  border-bottom: 1px solid #ecd8e8;
   cursor: pointer;
 }
 

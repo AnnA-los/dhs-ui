@@ -27,9 +27,6 @@
       </el-table-column>
       <el-table-column label="手机号" prop="phone" width="140" />
       <el-table-column label="来源渠道" prop="sourceChannel" width="120" />
-      <el-table-column label="隐私授权" prop="privacyAuth" width="100">
-        <template slot-scope="scope">{{ scope.row.privacyAuth === '1' ? '已授权' : '未授权' }}</template>
-      </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime" width="170">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
@@ -78,18 +75,9 @@
         <el-form-item label="证件号" prop="idCard">
           <el-input v-model="form.idCard" placeholder="请输入证件号" />
         </el-form-item>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="来源渠道" prop="sourceChannel">
-              <el-input v-model="form.sourceChannel" placeholder="请输入来源渠道" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="隐私授权" prop="privacyAuth">
-              <el-switch v-model="form.privacyAuth" active-value="1" inactive-value="0" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <el-form-item label="来源渠道" prop="sourceChannel">
+          <el-input v-model="form.sourceChannel" placeholder="请输入来源渠道" />
+        </el-form-item>
         <el-form-item label="过敏史" prop="allergyHistory">
           <el-input v-model="form.allergyHistory" type="textarea" placeholder="请输入过敏史" />
         </el-form-item>
@@ -151,7 +139,6 @@ export default { name: 'MedicalPatient', mixins: [medicalTableHeight],
         patientId: undefined,
         patientName: undefined,
         gender: '2',
-        privacyAuth: '0',
         status: '0'
       }
       this.resetForm('form')
@@ -173,6 +160,7 @@ export default { name: 'MedicalPatient', mixins: [medicalTableHeight],
       this.reset()
       getPatient(row.patientId).then(response => {
         this.form = response.data
+        delete this.form.privacyAuth
         this.open = true
         this.title = '修改患者档案'
       })

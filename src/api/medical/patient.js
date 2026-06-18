@@ -9,6 +9,15 @@ export function listPatient(query) {
   })
 }
 
+// 查询患者下拉选项
+export function patientOptions(query) {
+  return request({
+    url: '/medical/patient/options',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询患者档案详细
 export function getPatient(patientId) {
   return request({

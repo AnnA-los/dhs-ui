@@ -196,8 +196,7 @@ export default {
   justify-content: center;
   align-items: center;
   height: 100%;
-  background-image: url("../assets/images/login-background.jpg");
-  background-size: cover;
+  background: #f8eef7;
 }
 .title {
   margin: 0 auto 18px auto;
@@ -240,7 +239,7 @@ export default {
   bottom: 0;
   width: 100%;
   text-align: center;
-  color: #fff;
+  color: #8a6f86;
   font-family: Arial;
   font-size: 12px;
   letter-spacing: 1px;

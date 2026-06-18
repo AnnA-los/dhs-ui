@@ -1,0 +1,15 @@
+<template>
+  <div class="app-container">
+    <el-row :gutter="10" class="mb8"><el-col :span="1.5"><el-button type="primary" plain icon="el-icon-plus" size="mini" @click="handleAdd">新增</el-button></el-col><right-toolbar @queryTable="getList"></right-toolbar></el-row>
+    <el-table v-loading="loading" :data="equipmentList" :height="tableHeight" border fit>
+      <el-table-column label="器械名称" prop="equipmentName" min-width="180" /><el-table-column label="采购时间" prop="purchaseTime" width="130" /><el-table-column label="成本" prop="costAmount" width="120" /><el-table-column label="备注" prop="remark" min-width="200" show-overflow-tooltip /><el-table-column label="操作" width="150"><template slot-scope="scope"><el-button type="text" size="mini" @click="handleUpdate(scope.row)">修改</el-button><el-button type="text" size="mini" @click="handleDelete(scope.row)">删除</el-button></template></el-table-column>
+    </el-table>
+    <pagination v-show="total > 0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList" />
+    <el-dialog :title="title" :visible.sync="open" width="520px" append-to-body><el-form ref="form" :model="form" label-width="90px"><el-form-item label="器械名称"><el-input v-model="form.equipmentName" /></el-form-item><el-form-item label="采购时间"><el-date-picker v-model="form.purchaseTime" value-format="yyyy-MM-dd" type="date" /></el-form-item><el-form-item label="成本"><el-input-number v-model="form.costAmount" :precision="2" :min="0" /></el-form-item><el-form-item label="备注"><el-input v-model="form.remark" type="textarea" /></el-form-item></el-form><div slot="footer" class="dialog-footer"><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="open=false">取 消</el-button></div></el-dialog>
+  </div>
+</template>
+<script>
+import { listEquipment, getEquipment, addEquipment, updateEquipment, delEquipment } from '@/api/medical/equipment'
+import medicalTableHeight from '@/views/medical/mixins/tableHeight'
+export default { name: 'MedicalEquipment', mixins: [medicalTableHeight], data() { return { loading: true, total: 0, equipmentList: [], open: false, title: '', queryParams: { pageNum: 1, pageSize: 10 }, form: {} } }, created() { this.getList() }, methods: { getList() { this.loading = true; listEquipment(this.queryParams).then(r => { this.equipmentList = r.rows; this.total = r.total; this.loading = false }) }, reset() { this.form = { costAmount: 0 }; this.resetForm('form') }, handleAdd() { this.reset(); this.title = '新增大型器械'; this.open = true }, handleUpdate(row) { getEquipment(row.equipmentId).then(r => { this.form = r.data; this.title = '修改大型器械'; this.open = true }) }, submitForm() { const req = this.form.equipmentId ? updateEquipment(this.form) : addEquipment(this.form); req.then(() => { this.$modal.msgSuccess('保存成功'); this.open = false; this.getList() }) }, handleDelete(row) { this.$modal.confirm('是否确认删除器械"' + row.equipmentName + '"？').then(() => delEquipment(row.equipmentId)).then(() => { this.getList(); this.$modal.msgSuccess('删除成功') }).catch(() => {}) } } }
+</script>

@@ -1,7 +1,10 @@
 <template>
   <div class="login">
     <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form" autocomplete="off">
-      <h3 class="title">{{ title }}</h3>
+      <div class="login-brand">
+        <img :src="logo" alt="DHS logo" class="login-brand-logo" />
+        <h3 class="title">{{ title }}</h3>
+      </div>
       <el-tabs v-model="loginType" stretch class="login-tabs">
         <el-tab-pane label="手机号登录" name="phone" />
         <el-tab-pane label="邮箱登录" name="email" />
@@ -58,20 +61,27 @@
       </el-form-item>
     </el-form>
 
-    <el-dialog title="选择医院" :visible.sync="hospitalDialogOpen" width="520px" :close-on-click-modal="false" :show-close="false" append-to-body>
-      <div class="hospital-dialog-tip">您的登录账号在系统中存在多个医院，请选择本次进入的医院</div>
-      <el-table :data="loginHospitals" border fit highlight-current-row @row-click="selectedHospital = $event">
-        <el-table-column label="医院" prop="hospitalName" min-width="180" show-overflow-tooltip />
-        <el-table-column label="角色" min-width="120">
-          <template slot-scope="scope">{{ roleLevelName(scope.row.roleLevel, scope.row.isAdmin) }}</template>
-        </el-table-column>
-        <el-table-column label="部门" prop="deptName" min-width="120">
-          <template slot-scope="scope">{{ scope.row.deptName || '-' }}</template>
-        </el-table-column>
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="cancelSelectHospital">取消</el-button>
-        <el-button type="primary" :disabled="!selectedHospital" @click="confirmSelectHospital">确定</el-button>
+    <el-dialog
+      title="选择医院"
+      :visible.sync="hospitalDialogOpen"
+      width="380px"
+      custom-class="login-hospital-dialog"
+      :close-on-click-modal="false"
+      append-to-body
+      @close="cancelSelectHospital"
+    >
+      <div class="hospital-select-list">
+        <div
+          v-for="item in loginHospitals"
+          :key="item.hospitalUserId"
+          class="hospital-select-item"
+        >
+          <div class="hospital-select-content">
+            <div class="hospital-select-name">{{ item.hospitalName }}</div>
+            <div class="hospital-select-meta">{{ roleLevelName(item.roleLevel, item.isAdmin) }} · {{ item.deptName || '医院主体' }}</div>
+          </div>
+          <el-button type="primary" class="hospital-enter-btn" @click="confirmSelectHospital(item)">进入</el-button>
+        </div>
       </div>
     </el-dialog>
 
@@ -88,12 +98,14 @@ import { setToken, removeToken } from '@/utils/auth'
 import Cookies from 'js-cookie'
 import { encrypt, decrypt } from '@/utils/jsencrypt'
 import defaultSettings from '@/settings'
+import logoImg from '@/assets/logo/logo.svg'
 
 export default {
   name: 'Login',
   data() {
     return {
       title: process.env.VUE_APP_TITLE,
+      logo: logoImg,
       footerContent: defaultSettings.footerContent,
       codeUrl: '',
       loginType: 'phone',
@@ -193,11 +205,12 @@ export default {
         this.loading = false
       })
     },
-    confirmSelectHospital() {
-      if (!this.selectedHospital) {
+    confirmSelectHospital(hospital) {
+      const targetHospital = hospital || this.selectedHospital
+      if (!targetHospital) {
         return
       }
-      selectLoginHospital(this.selectedHospital.hospitalUserId).then(response => {
+      selectLoginHospital(targetHospital.hospitalUserId).then(response => {
         setToken(response.token)
         this.$store.commit('SET_TOKEN', response.token)
         this.goHome()
@@ -229,13 +242,25 @@ export default {
   justify-content: center;
   align-items: center;
   height: 100%;
-  background-image: url("../assets/images/login-background.jpg");
-  background-size: cover;
+  background: #f8eef7;
+}
+.login-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 auto 18px auto;
+}
+.login-brand-logo {
+  width: 70px;
+  height: 70px;
+  flex: 0 0 70px;
 }
 .title {
-  margin: 0 auto 18px auto;
+  margin: 0;
   text-align: center;
-  color: #707070;
+  color: #25324b;
+  font-weight: 600;
 }
 .login-tabs {
   margin-bottom: 16px;
@@ -267,10 +292,6 @@ export default {
     vertical-align: middle;
   }
 }
-.hospital-dialog-tip {
-  margin-bottom: 14px;
-  color: #606266;
-}
 .el-login-footer {
   height: 40px;
   line-height: 40px;
@@ -278,12 +299,85 @@ export default {
   bottom: 0;
   width: 100%;
   text-align: center;
-  color: #fff;
+  color: #8a6f86;
   font-family: Arial;
   font-size: 12px;
   letter-spacing: 1px;
 }
 .login-code-img {
   height: 38px;
+}
+
+::v-deep .login-hospital-dialog {
+  border-radius: 3px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0 !important;
+  transform: translate(-50%, -50%);
+
+  .el-dialog__header {
+    padding: 18px 22px 6px;
+  }
+
+  .el-dialog__title {
+    color: #303133;
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  .el-dialog__headerbtn {
+    top: 17px;
+    right: 20px;
+    font-size: 18px;
+  }
+
+  .el-dialog__body {
+    padding: 20px 22px 24px;
+  }
+}
+
+.hospital-select-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hospital-select-item {
+  min-height: 56px;
+  border: 1px solid #dcdfe6;
+  border-radius: 5px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+
+}
+
+.hospital-select-content {
+  min-width: 0;
+}
+
+.hospital-select-name {
+  color: #303133;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.hospital-select-meta {
+  margin-top: 5px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.hospital-enter-btn {
+  width: 56px;
+  height: 30px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
 }
 </style>

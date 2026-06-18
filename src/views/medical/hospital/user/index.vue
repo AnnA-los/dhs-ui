@@ -1,8 +1,8 @@
 ﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch">
-      <el-form-item label="用户" prop="uid">
-        <el-input v-model="queryParams.uid" clearable @keyup.enter.native="handleQuery" />
+      <el-form-item label="用户" prop="nickName">
+        <el-input v-model="queryParams.nickName" placeholder="昵称/手机号/邮箱" clearable @keyup.enter.native="handleQuery" />
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" clearable>
@@ -29,6 +29,9 @@
       </el-table-column>
       <el-table-column label="部门" prop="deptName" min-width="130" show-overflow-tooltip>
         <template slot-scope="scope">{{ scope.row.deptName || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="岗位" prop="postName" min-width="120" show-overflow-tooltip>
+        <template slot-scope="scope">{{ scope.row.postName || '-' }}</template>
       </el-table-column>
       <el-table-column label="邀请人" prop="inviterUserName" min-width="120" show-overflow-tooltip>
         <template slot-scope="scope">{{ scope.row.inviterUserName || '-' }}</template>
@@ -73,6 +76,11 @@
             <el-option v-for="dept in deptOptions" :key="dept.deptId" :label="dept.deptName" :value="dept.deptId" />
           </el-select>
         </el-form-item>
+        <el-form-item label="用户岗位" prop="postId">
+          <el-select v-model="form.postId" filterable remote clearable placeholder="请选择岗位" :remote-method="remotePosts" :loading="postLoading" style="width: 100%">
+            <el-option v-for="post in postOptions" :key="post.postId" :label="post.postName" :value="post.postId" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -96,6 +104,7 @@
 import { listHospitalUser, getHospitalUser, addHospitalUser, updateHospitalUser, delHospitalUser, assignHospitalUserRoles } from '@/api/medical/hospitalUser'
 import { listHospitalRole } from '@/api/medical/hospitalRole'
 import { listHospitalDept } from '@/api/medical/hospitalDept'
+import { hospitalPostOptions } from '@/api/medical/hospitalPost'
 import medicalTableHeight from '@/views/medical/mixins/tableHeight'
 
 export default {
@@ -109,17 +118,20 @@ export default {
       userList: [],
       roleOptions: [],
       deptOptions: [],
+      postOptions: [],
+      postLoading: false,
       open: false,
       roleOpen: false,
       title: '',
-      queryParams: { pageNum: 1, pageSize: 10, uid: undefined, status: undefined },
+      queryParams: { pageNum: 1, pageSize: 10, nickName: undefined, status: undefined },
       form: {},
       roleForm: { hospitalUserId: undefined, roleIds: [] },
       rules: {
         nickName: [{ required: true, message: '用户名称不能为空', trigger: 'blur' }],
         password: [{ required: true, message: '登录密码不能为空', trigger: 'blur' }],
         roleIds: [{ required: true, type: 'array', message: '用户角色不能为空', trigger: 'change' }],
-        deptId: [{ required: true, message: '用户部门不能为空', trigger: 'change' }]
+        deptId: [{ required: true, message: '用户部门不能为空', trigger: 'change' }],
+        postId: [{ required: true, message: '用户岗位不能为空', trigger: 'change' }]
       }
     }
   },
@@ -127,6 +139,7 @@ export default {
     this.getList()
     listHospitalRole({ pageNum: 1, pageSize: 100 }).then(response => { this.roleOptions = response.rows || [] })
     listHospitalDept().then(response => { this.deptOptions = response.data || response.rows || [] })
+    this.remotePosts('')
   },
   methods: {
     getList() {
@@ -146,7 +159,14 @@ export default {
       this.handleQuery()
     },
     reset() {
-      this.form = { nickName: undefined, phonenumber: undefined, email: undefined, password: undefined, roleIds: [], deptId: undefined }
+      this.form = { nickName: undefined, phonenumber: undefined, email: undefined, password: undefined, roleIds: [], deptId: undefined, postId: undefined }
+    },
+    remotePosts(query) {
+      this.postLoading = true
+      hospitalPostOptions({ postName: query }).then(response => {
+        this.postOptions = response.data || []
+        this.postLoading = false
+      })
     },
     handleAdd() {
       this.reset()

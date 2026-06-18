@@ -15,7 +15,3 @@ export function addCharge(data) {
 export function updateCharge(data) {
   return request({ url: '/medical/charge/order', method: 'put', data: data })
 }
-
-export function delCharge(chargeOrderId) {
-  return request({ url: '/medical/charge/order/' + chargeOrderId, method: 'delete' })
-}

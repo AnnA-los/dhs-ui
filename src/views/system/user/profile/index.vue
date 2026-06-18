@@ -334,7 +334,7 @@ export default {
 
 <style lang="scss" scoped>
 .profile-page {
-  background: #f5f7fa;
+  background: #f8eef7;
 }
 
 .profile-hero,
@@ -380,7 +380,7 @@ export default {
   gap: 8px 32px;
   padding: 18px 22px;
   border-radius: 6px;
-  background: #f3f6fa;
+  background: #fff;
   box-sizing: border-box;
   align-items: start;
 }
@@ -460,7 +460,7 @@ export default {
   padding: 16px;
   border: 1px solid #ebeef5;
   border-radius: 4px;
-  background: #f7f9fc;
+  background: #fbf3fa;
 }
 
 .invite-code {
