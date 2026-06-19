@@ -21,6 +21,9 @@
           <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-form-item>
+      <el-form-item label="预约时间">
+        <el-date-picker v-model="appointmentTimeRange" type="datetimerange" value-format="yyyy-MM-dd HH:mm:ss" range-separator="至" start-placeholder="开始时间" end-placeholder="结束时间" @change="handleAppointmentTimeRangeChange" />
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -38,22 +41,21 @@
     </el-row>
 
     <el-table v-loading="loading" :data="appointmentList" :height="tableHeight" border fit>
+      <el-table-column label="预约编号" prop="appointmentNo" min-width="170" show-overflow-tooltip />
       <el-table-column label="患者" prop="patientName" min-width="130" show-overflow-tooltip />
       <el-table-column label="手机号" prop="patientPhone" min-width="120" show-overflow-tooltip />
       <el-table-column label="预约部门" prop="deptName" min-width="130" show-overflow-tooltip />
       <el-table-column label="医生" prop="doctorName" min-width="130" show-overflow-tooltip />
       <el-table-column label="就诊类型" prop="appointmentTypeName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="开始时间" prop="appointmentStart" min-width="170">
+      <el-table-column label="预约时间" prop="appointmentStart" min-width="170">
         <template slot-scope="scope">{{ parseTime(scope.row.appointmentStart) }}</template>
-      </el-table-column>
-      <el-table-column label="结束时间" prop="appointmentEnd" min-width="170">
-        <template slot-scope="scope">{{ parseTime(scope.row.appointmentEnd) }}</template>
       </el-table-column>
       <el-table-column label="预约状态" prop="appointmentStatus" min-width="100">
         <template slot-scope="scope">{{ statusName(scope.row.appointmentStatus) }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="160" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="230" class-name="small-padding fixed-width">
         <template slot-scope="scope">
+          <el-button v-if="scope.row.appointmentStatus === '2'" type="text" size="mini" icon="el-icon-document-add" @click="handleAddVisit(scope.row)">新增病历</el-button>
           <el-button type="text" size="mini" icon="el-icon-edit" @click="handleUpdate(scope.row)">修改</el-button>
           <el-button type="text" size="mini" icon="el-icon-delete" @click="handleDelete(scope.row)">删除</el-button>
         </template>
@@ -70,6 +72,7 @@
               <el-autocomplete
                 v-model="form.patientName"
                 clearable
+                :disabled="isEdit"
                 placeholder="请选择或输入患者"
                 :fetch-suggestions="queryPatientSuggestions"
                 style="width: 100%"
@@ -80,7 +83,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="手机号" prop="patientPhone">
-              <el-input v-model="form.patientPhone" clearable placeholder="请输入手机号" />
+              <el-input v-model="form.patientPhone" :disabled="isEdit" clearable placeholder="请输入手机号" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -100,10 +103,11 @@
                 remote
                 clearable
                 :disabled="!form.deptId"
-                :placeholder="form.deptId ? '请选择医生' : '请先选择预约部门'"
+                :placeholder="form.deptId ? '仅可筛选岗位包含医生的员工' : '请先选择预约部门'"
                 :remote-method="remoteFormDoctors"
                 :loading="formDoctorLoading"
                 style="width: 100%"
+                @visible-change="handleDoctorVisibleChange"
               >
                 <el-option v-for="item in formDoctorOptions" :key="item.hospitalUserId" :label="item.nickName" :value="item.hospitalUserId" />
               </el-select>
@@ -134,13 +138,8 @@
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="开始时间" prop="appointmentStart">
-              <el-date-picker v-model="form.appointmentStart" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" placeholder="请选择开始时间" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="结束时间" prop="appointmentEnd">
-              <el-date-picker v-model="form.appointmentEnd" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" placeholder="请选择结束时间" style="width: 100%" />
+            <el-form-item label="预约时间" prop="appointmentStart">
+              <el-date-picker v-model="form.appointmentStart" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" placeholder="请选择预约时间" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -165,7 +164,7 @@
 import { listAppointment, getAppointment, delAppointment, addAppointment, updateAppointment } from '@/api/medical/appointment'
 import { patientOptions as queryPatients } from '@/api/medical/patient'
 import { doctorOptions as queryDoctors } from '@/api/medical/hospitalUser'
-import { listHospitalDept } from '@/api/medical/hospitalDept'
+import { hospitalDeptOptions } from '@/api/medical/hospitalDept'
 import { medicalTypeOptions } from '@/api/medical/type'
 import medicalTableHeight from '@/views/medical/mixins/tableHeight'
 import TypeManageDialog from '@/views/medical/components/TypeManageDialog'
@@ -175,13 +174,6 @@ export default {
   components: { TypeManageDialog },
   mixins: [medicalTableHeight],
   data() {
-    const checkTimeRange = (rule, value, callback) => {
-      if (this.form.appointmentStart && this.form.appointmentEnd && this.form.appointmentStart > this.form.appointmentEnd) {
-        callback(new Error('开始时间不能晚于结束时间'))
-        return
-      }
-      callback()
-    }
     const checkCancelReason = (rule, value, callback) => {
       if (this.form.appointmentStatus === '5' && !value) {
         callback(new Error('取消原因不能为空'))
@@ -205,11 +197,10 @@ export default {
       title: '',
       open: false,
       typeOpen: false,
+      appointmentTimeRange: this.getCurrentMonthTimeRange(),
       statusOptions: [
-        { label: '待确认', value: '0' },
-        { label: '已确认', value: '1' },
+        { label: '已预约', value: '1' },
         { label: '已签到', value: '2' },
-        { label: '接诊中', value: '3' },
         { label: '已完成', value: '4' },
         { label: '已取消', value: '5' },
         { label: '爽约', value: '6' }
@@ -220,7 +211,8 @@ export default {
         patientId: undefined,
         doctorUserId: undefined,
         appointmentTypeId: undefined,
-        appointmentStatus: undefined
+        appointmentStatus: undefined,
+        params: {}
       },
       form: {},
       rules: {
@@ -230,16 +222,14 @@ export default {
         doctorUserId: [{ required: true, message: '医生不能为空', trigger: 'change' }],
         appointmentTypeText: [{ required: true, message: '就诊类型不能为空', trigger: 'change' }],
         appointmentStatus: [{ required: true, message: '预约状态不能为空', trigger: 'change' }],
-        appointmentStart: [
-          { required: true, message: '开始时间不能为空', trigger: 'change' },
-          { validator: checkTimeRange, trigger: 'change' }
-        ],
-        appointmentEnd: [
-          { required: true, message: '结束时间不能为空', trigger: 'change' },
-          { validator: checkTimeRange, trigger: 'change' }
-        ],
+        appointmentStart: [{ required: true, message: '预约时间不能为空', trigger: 'change' }],
         cancelReason: [{ validator: checkCancelReason, trigger: 'blur' }]
       }
+    }
+  },
+  computed: {
+    isEdit() {
+      return !!this.form.appointmentId
     }
   },
   created() {
@@ -252,6 +242,10 @@ export default {
   methods: {
     getList() {
       this.loading = true
+      this.queryParams.params = {
+        beginTime: this.appointmentTimeRange && this.appointmentTimeRange.length ? this.appointmentTimeRange[0] : undefined,
+        endTime: this.appointmentTimeRange && this.appointmentTimeRange.length ? this.appointmentTimeRange[1] : undefined
+      }
       listAppointment(this.queryParams).then(response => {
         this.appointmentList = response.rows || []
         this.total = response.total || 0
@@ -261,8 +255,8 @@ export default {
       })
     },
     loadDepts() {
-      listHospitalDept({ pageNum: 1, pageSize: 999 }).then(response => {
-        this.deptOptions = response.rows || []
+      hospitalDeptOptions().then(response => {
+        this.deptOptions = response.data || response.rows || []
       })
     },
     loadTypes() {
@@ -290,16 +284,31 @@ export default {
     },
     remoteFormDoctors(query) {
       if (!this.form.deptId) {
-        this.formDoctorOptions = []
+        this.formDoctorOptions = this.currentDoctorOption()
         return
       }
       this.formDoctorLoading = true
       queryDoctors({ nickName: query, deptId: this.form.deptId }).then(response => {
-        this.formDoctorOptions = response.data || []
+        this.formDoctorOptions = this.mergeDoctorOptions(response.data || [])
         this.formDoctorLoading = false
       }).catch(() => {
         this.formDoctorLoading = false
       })
+    },
+    currentDoctorOption() {
+      if (!this.form.doctorUserId || !this.form.doctorName) {
+        return []
+      }
+      return [{ hospitalUserId: this.form.doctorUserId, nickName: this.form.doctorName }]
+    },
+    mergeDoctorOptions(options) {
+      const list = [...this.currentDoctorOption()]
+      ;(options || []).forEach(item => {
+        if (!list.some(option => String(option.hospitalUserId) === String(item.hospitalUserId))) {
+          list.push(item)
+        }
+      })
+      return list
     },
     queryPatientSuggestions(queryString, cb) {
       queryPatients({ patientName: queryString }).then(response => {
@@ -338,6 +347,11 @@ export default {
       this.formDoctorOptions = []
       this.remoteFormDoctors('')
     },
+    handleDoctorVisibleChange(visible) {
+      if (visible && this.form.deptId) {
+        this.remoteFormDoctors('')
+      }
+    },
     cancel() {
       this.open = false
       this.reset()
@@ -352,7 +366,7 @@ export default {
         doctorUserId: undefined,
         appointmentTypeId: undefined,
         appointmentTypeText: undefined,
-        appointmentStatus: '0',
+        appointmentStatus: '1',
         cancelReason: undefined,
         remark: undefined
       }
@@ -364,7 +378,12 @@ export default {
       this.getList()
     },
     resetQuery() {
+      this.appointmentTimeRange = this.getCurrentMonthTimeRange()
       this.resetForm('queryForm')
+      this.handleQuery()
+    },
+    handleAppointmentTimeRangeChange(value) {
+      this.appointmentTimeRange = this.restoreCurrentMonthRange(value, true)
       this.handleQuery()
     },
     handleAdd() {
@@ -377,6 +396,7 @@ export default {
       getAppointment(row.appointmentId).then(response => {
         this.form = response.data || {}
         this.form.appointmentTypeText = this.form.appointmentTypeName
+        this.formDoctorOptions = this.currentDoctorOption()
         this.open = true
         this.title = '修改预约'
         this.remoteFormDoctors('')
@@ -399,6 +419,36 @@ export default {
         this.getList()
         this.$modal.msgSuccess('删除成功')
       }).catch(() => {})
+    },
+    handleAddVisit(row) {
+      this.$router.push({ path: this.findMenuPath(this.$store.state.permission.sidebarRouters || [], '接诊病历') || '/medicalPatient/visit', query: { appointmentId: row.appointmentId }})
+    },
+    findMenuPath(routes, title, parentPath = '') {
+      for (const route of routes) {
+        const currentPath = this.joinRoutePath(parentPath, route.path)
+        if (route.meta && route.meta.title === title) {
+          return currentPath
+        }
+        if (route.children && route.children.length) {
+          const childPath = this.findMenuPath(route.children, title, currentPath)
+          if (childPath) {
+            return childPath
+          }
+        }
+      }
+      return ''
+    },
+    joinRoutePath(parentPath, path) {
+      if (!path) {
+        return parentPath
+      }
+      if (path.startsWith('/')) {
+        return path
+      }
+      if (!parentPath || parentPath === '/') {
+        return `/${path}`
+      }
+      return `${parentPath.replace(/\/$/, '')}/${path}`
     },
     statusName(status) {
       const item = this.statusOptions.find(option => option.value === status)

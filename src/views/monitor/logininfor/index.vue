@@ -44,6 +44,7 @@
           start-placeholder="开始日期"
           end-placeholder="结束日期"
           :default-time="['00:00:00', '23:59:59']"
+          @change="handleDateRangeChange"
         ></el-date-picker>
       </el-form-item>
       <el-form-item>
@@ -154,7 +155,7 @@ export default {
       // 表格数据
       list: [],
       // 日期范围
-      dateRange: [],
+      dateRange: this.getCurrentMonthTimeRange(),
       // 默认排序
       defaultSort: { prop: "loginTime", order: "descending" },
       // 查询参数
@@ -188,10 +189,14 @@ export default {
     },
     /** 重置按钮操作 */
     resetQuery() {
-      this.dateRange = []
+      this.dateRange = this.getCurrentMonthTimeRange()
       this.resetForm("queryForm")
       this.queryParams.pageNum = 1
       this.$refs.tables.sort(this.defaultSort.prop, this.defaultSort.order)
+    },
+    handleDateRangeChange(value) {
+      this.dateRange = this.restoreCurrentMonthRange(value, true)
+      this.handleQuery()
     },
     /** 多选框选中数据 */
     handleSelectionChange(selection) {
@@ -243,4 +248,3 @@ export default {
   }
 }
 </script>
-

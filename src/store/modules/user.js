@@ -86,10 +86,10 @@ const user = {
           }
           if (res.roles && res.roles.length > 0) { // 验证返回的roles是否是一个非空数组
             commit('SET_ROLES', res.roles)
-            commit('SET_PERMISSIONS', res.permissions)
           } else {
             commit('SET_ROLES', ['ROLE_DEFAULT'])
           }
+          commit('SET_PERMISSIONS', res.permissions || [])
           commit('SET_ID', user.userId)
           commit('SET_NAME', user.userName)
           commit('SET_NICK_NAME', user.nickName)

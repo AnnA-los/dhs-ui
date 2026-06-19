@@ -66,7 +66,7 @@ export default {
   },
   methods: {
     recordStatusName(status) {
-      return { '0': '草稿', '1': '已提交', '2': '已归档' }[status] || status || '-'
+      return { '0': '草稿', '1': '已提交' }[status] || status || '-'
     }
   }
 }

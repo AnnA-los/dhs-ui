@@ -17,6 +17,7 @@ export default {
     title: { type: String, required: true },
     rows: { type: Array, default: () => [] },
     chartType: { type: String, default: 'bar' },
+    pieMode: { type: String, default: 'category' },
     metric: { type: String, default: 'amount' }
   },
   data() {
@@ -32,6 +33,9 @@ export default {
       deep: true
     },
     chartType() {
+      this.renderChart()
+    },
+    pieMode() {
       this.renderChart()
     }
   },
@@ -57,18 +61,51 @@ export default {
       return Number((this.metric === 'quantity' ? row.quantity : row.amount) || 0)
     },
     axisRows() {
-      return (this.rows || []).map(row => ({
-        name: [row.statTime, row.statName].filter(Boolean).join(' / ') || '未分组',
-        value: this.metricValue(row)
-      }))
+      const times = []
+      const names = []
+      const grouped = {}
+      ;(this.rows || []).forEach(row => {
+        const time = row.statTime || '未分组'
+        const name = row.statName || this.title || '统计值'
+        if (times.indexOf(time) === -1) {
+          times.push(time)
+        }
+        if (names.indexOf(name) === -1) {
+          names.push(name)
+        }
+        if (!grouped[name]) {
+          grouped[name] = {}
+        }
+        grouped[name][time] = (grouped[name][time] || 0) + this.metricValue(row)
+      })
+      times.sort()
+      return {
+        times,
+        series: names.map(name => ({
+          name,
+          data: times.map(time => grouped[name][time] || 0)
+        }))
+      }
     },
     pieRows() {
       const grouped = {}
       ;(this.rows || []).forEach(row => {
-        const name = row.statName || row.statTime || '未分组'
+        const name = this.pieMode === 'time' ? (row.statTime || '未分组') : (row.statName || row.statTime || '未分组')
         grouped[name] = (grouped[name] || 0) + this.metricValue(row)
       })
       return Object.keys(grouped).map(name => ({ name, value: grouped[name] }))
+    },
+    axisTooltip(params) {
+      const items = (params || []).filter(item => Number(item.value || 0) > 0)
+      if (!items.length) {
+        return params && params.length ? params[0].axisValue : ''
+      }
+      const total = items.reduce((sum, item) => sum + Number(item.value || 0), 0)
+      const lines = [`${items[0].axisValue} 合计：${total}`]
+      items.forEach(item => {
+        lines.push(`${item.marker}${item.seriesName}：${item.value}`)
+      })
+      return lines.join('<br/>')
     },
     emptyOption() {
       return {
@@ -92,13 +129,17 @@ export default {
         return
       }
       const rows = this.chartType === 'pie' ? this.pieRows() : this.axisRows()
-      if (!rows.length) {
+      if (this.chartType === 'pie' ? !rows.length : !rows.times.length) {
         this.chart.setOption(this.emptyOption(), true)
         return
       }
       const baseOption = {
         color: ['#4C7EFF', '#28A745', '#F59F00', '#E8590C', '#7950F2', '#15AABF', '#E64980'],
-        tooltip: { trigger: this.chartType === 'pie' ? 'item' : 'axis' },
+        tooltip: {
+          trigger: this.chartType === 'pie' ? 'item' : 'axis',
+          axisPointer: this.chartType === 'bar' ? { type: 'shadow' } : { type: 'line' },
+          formatter: this.chartType === 'pie' ? undefined : this.axisTooltip
+        },
         grid: { left: 42, right: 24, top: 36, bottom: 54, containLabel: true }
       }
       if (this.chartType === 'pie') {
@@ -108,10 +149,12 @@ export default {
           series: [{
             name: this.title,
             type: 'pie',
-            radius: ['38%', '64%'],
+            radius: '64%',
             center: ['50%', '44%'],
             avoidLabelOverlap: true,
-            label: { formatter: '{b}: {d}%' },
+            label: {
+              formatter: params => `${params.name}: ${params.percent}%`
+            },
             data: rows
           }]
         }, true)
@@ -122,17 +165,20 @@ export default {
         ...baseOption,
         xAxis: {
           type: 'category',
-          data: rows.map(item => item.name),
-          axisLabel: { interval: 0, rotate: rows.length > 5 ? 28 : 0 }
+          data: rows.times,
+          axisLabel: { interval: 0, rotate: rows.times.length > 5 ? 28 : 0 }
         },
         yAxis: { type: 'value' },
-        series: [{
-          name: this.title,
+        legend: rows.series.length > 1 ? { type: 'scroll', top: 0, right: 12 } : undefined,
+        series: rows.series.map(item => ({
+          name: item.name,
           type,
           smooth: type === 'line',
+          stack: type === 'bar' ? 'total' : undefined,
           barMaxWidth: 38,
-          data: rows.map(item => item.value)
-        }]
+          emphasis: type === 'bar' ? { focus: 'series' } : undefined,
+          data: item.data
+        }))
       }, true)
     }
   }

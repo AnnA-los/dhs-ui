@@ -4,6 +4,10 @@ export function listHospitalDept(query) {
   return request({ url: '/medical/hospital/dept/list', method: 'get', params: query })
 }
 
+export function hospitalDeptOptions(query) {
+  return request({ url: '/medical/hospital/dept/options', method: 'get', params: query })
+}
+
 export function getHospitalDept(deptId) {
   return request({ url: '/medical/hospital/dept/' + deptId, method: 'get' })
 }

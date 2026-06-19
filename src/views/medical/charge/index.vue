@@ -32,6 +32,7 @@
           end-placeholder="结束日期"
           value-format="yyyy-MM-dd"
           style="width: 240px"
+          @change="handleDateRangeChange"
         />
       </el-form-item>
       <el-form-item>
@@ -82,6 +83,9 @@
       <el-table-column label="已收" prop="paidAmount" min-width="100">
         <template slot-scope="scope">{{ money(scope.row.paidAmount) }}</template>
       </el-table-column>
+      <el-table-column label="退款" prop="refundAmount" min-width="100">
+        <template slot-scope="scope">{{ money(scope.row.refundAmount) }}</template>
+      </el-table-column>
       <el-table-column label="创建时间" prop="createTime" min-width="160">
         <template slot-scope="scope">{{ parseTime(scope.row.createTime) }}</template>
       </el-table-column>
@@ -125,10 +129,15 @@
         <el-form-item label="已收金额">
           <el-input-number v-model="form.paidAmount" :precision="2" :min="0" />
         </el-form-item>
+        <el-form-item label="退款金额">
+          <el-input-number v-model="form.refundAmount" :precision="2" :min="0" />
+        </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.orderStatus" style="width: 100%">
-            <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
+            <el-option v-if="form.orderStatus !== '4'" :label="statusName(form.orderStatus)" :value="form.orderStatus" disabled />
+            <el-option label="已作废" value="4" />
           </el-select>
+          <div class="form-tip">除已作废外，状态按已收、实收和退款金额自动计算。</div>
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" />
@@ -140,11 +149,11 @@
       </div>
     </el-dialog>
 
-    <el-dialog title="收费明细收据" :visible.sync="receiptOpen" width="760px" append-to-body class="receipt-dialog">
+    <el-dialog title="费用单据" :visible.sync="receiptOpen" width="760px" append-to-body class="receipt-dialog">
       <div class="receipt-paper">
         <div class="receipt-head">
           <div>
-            <div class="receipt-title">收费明细</div>
+            <div class="receipt-title">费用单据</div>
             <div class="receipt-subtitle">病历编号：{{ receiptCharge.visitNo || '-' }}</div>
           </div>
           <div class="receipt-status charge-status-badge" :class="statusClass(receiptCharge.orderStatus)">{{ statusName(receiptCharge.orderStatus) }}</div>
@@ -173,6 +182,8 @@
           <div><span>折扣比例</span><b>{{ discountRateText(receiptCharge.discountRate) }}</b></div>
           <div><span>折扣金额</span><b>{{ money(receiptCharge.discountAmount) }}</b></div>
           <div class="actual"><span>实收金额</span><b>{{ money(receiptCharge.actualAmount) }}</b></div>
+          <div><span>已收金额</span><b>{{ money(receiptCharge.paidAmount) }}</b></div>
+          <div><span>退款金额</span><b>{{ money(receiptCharge.refundAmount) }}</b></div>
         </div>
       </div>
       <div slot="footer" class="dialog-footer">
@@ -202,7 +213,7 @@ export default {
       chargeList: [],
       patientOptions: [],
       visitOptions: [],
-      dateRange: [],
+      dateRange: this.getCurrentMonthRange(),
       open: false,
       receiptOpen: false,
       receiptCharge: {},
@@ -216,7 +227,8 @@ export default {
         { label: '部分收费', value: '1' },
         { label: '已收费', value: '2' },
         { label: '已退款', value: '3' },
-        { label: '已作废', value: '4' }
+        { label: '已作废', value: '4' },
+        { label: '部分退款', value: '5' }
       ],
       itemTypeOptions: [
         { label: '药品', value: 'MEDICINE' },
@@ -250,8 +262,12 @@ export default {
       this.getList()
     },
     resetQuery() {
-      this.dateRange = []
+      this.dateRange = this.getCurrentMonthRange()
       this.resetForm('queryForm')
+      this.handleQuery()
+    },
+    handleDateRangeChange(value) {
+      this.dateRange = this.restoreCurrentMonthRange(value, false)
       this.handleQuery()
     },
     remotePatients(query) {
@@ -269,7 +285,7 @@ export default {
       })
     },
     reset() {
-      this.form = { totalAmount: 0, discountAmount: 0, discountRate: 0, actualAmount: 0, paidAmount: 0, orderStatus: '0', paymentTypes: '' }
+      this.form = { totalAmount: 0, discountAmount: 0, discountRate: 0, actualAmount: 0, paidAmount: 0, refundAmount: 0, orderStatus: '0', paymentTypes: '' }
       this.paymentTypeValues = []
       this.resetForm('form')
     },
@@ -295,6 +311,13 @@ export default {
         return
       }
       this.refreshActualAmount()
+      if (Number(this.form.refundAmount || 0) > Number(this.form.paidAmount || 0)) {
+        this.$modal.confirm('退款金额大于已收金额，是否确认提交？').then(() => this.doSubmitForm())
+        return
+      }
+      this.doSubmitForm()
+    },
+    doSubmitForm() {
       const payload = { ...this.form, paymentTypes: this.paymentTypeValues.join(',') }
       const request = payload.chargeOrderId ? updateCharge(payload) : addCharge(payload)
       request.then(() => {
@@ -355,7 +378,9 @@ export default {
       return true
     },
     validatePaymentTypes() {
-      if (!['0', '4'].includes(this.form.orderStatus) && this.paymentTypeValues.length === 0) {
+      const paidAmount = Number(this.form.paidAmount || 0)
+      const refundAmount = Number(this.form.refundAmount || 0)
+      if (this.form.orderStatus !== '4' && (paidAmount > 0 || refundAmount > 0) && this.paymentTypeValues.length === 0) {
         this.$modal.msgWarning('当前收费状态必须选择支付类型')
         return false
       }
@@ -387,7 +412,8 @@ export default {
         '1': 'status-partial',
         '2': 'status-paid',
         '3': 'status-refunded',
-        '4': 'status-void'
+        '4': 'status-void',
+        '5': 'status-partial-refund'
       }[status] || 'status-unknown'
     },
     itemTypeName(type) {
@@ -446,12 +472,23 @@ export default {
   background: #909399;
 }
 
+.status-partial-refund {
+  background: #8b5cf6;
+}
+
 .status-void {
   background: #4b5563;
 }
 
 .status-unknown {
   background: #b1b3b8;
+}
+
+.form-tip {
+  margin-top: 4px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .receipt-paper {

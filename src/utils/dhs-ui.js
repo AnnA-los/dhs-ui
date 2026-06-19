@@ -66,6 +66,31 @@ export function addDateRange(params, dateRange, propName) {
   return search
 }
 
+// 当前自然月日期范围
+export function getCurrentMonthRange() {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  return [
+    parseTime(new Date(year, month, 1), '{y}-{m}-{d}'),
+    parseTime(new Date(year, month + 1, 0), '{y}-{m}-{d}')
+  ]
+}
+
+// 当前自然月日期时间范围
+export function getCurrentMonthTimeRange() {
+  const range = getCurrentMonthRange()
+  return [range[0] + ' 00:00:00', range[1] + ' 23:59:59']
+}
+
+// 日期范围清空后恢复当前自然月
+export function restoreCurrentMonthRange(value, withTime) {
+  if (Array.isArray(value) && value.length === 2) {
+    return value
+  }
+  return withTime ? getCurrentMonthTimeRange() : getCurrentMonthRange()
+}
+
 // 回显数据字典
 export function selectDictLabel(datas, value) {
   if (value === undefined) {

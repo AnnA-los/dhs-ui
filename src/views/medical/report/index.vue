@@ -10,34 +10,54 @@
     </el-row>
 
     <div class="report-toolbar">
-      <el-radio-group v-model="granularity" size="small" @change="getStats">
-        <el-radio-button label="year">按年</el-radio-button>
-        <el-radio-button label="month">按月</el-radio-button>
-        <el-radio-button label="day">按天</el-radio-button>
-        <el-radio-button label="hour">按小时</el-radio-button>
-      </el-radio-group>
+      <div class="report-filter-group">
+        <el-radio-group v-model="granularity" size="small" @change="getStats">
+          <el-radio-button label="year">按年</el-radio-button>
+          <el-radio-button label="month">按月</el-radio-button>
+          <el-radio-button label="day">按天</el-radio-button>
+          <el-radio-button label="hour">按小时</el-radio-button>
+        </el-radio-group>
+        <el-date-picker
+          v-model="dateRange"
+          size="small"
+          type="daterange"
+          value-format="yyyy-MM-dd"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          clearable
+          @change="handleDateRangeChange"
+        />
+      </div>
       <el-radio-group v-model="chartType" size="small">
         <el-radio-button label="bar">柱状图</el-radio-button>
         <el-radio-button label="line">折线图</el-radio-button>
         <el-radio-button label="pie">扇形图</el-radio-button>
       </el-radio-group>
+      <el-radio-group v-if="chartType === 'pie'" v-model="pieMode" size="small">
+        <el-radio-button label="time">按时间</el-radio-button>
+        <el-radio-button label="category">按分类</el-radio-button>
+      </el-radio-group>
     </div>
 
     <el-row :gutter="16">
       <el-col :xs="24" :lg="12">
-        <report-chart title="采购成本" :rows="stats.purchaseCost" :chart-type="chartType" metric="amount" />
+        <report-chart title="采购成本" :rows="chartRows('purchaseCost')" :chart-type="chartType" :pie-mode="pieMode" metric="amount" />
       </el-col>
       <el-col :xs="24" :lg="12">
-        <report-chart title="收入" :rows="stats.income" :chart-type="chartType" metric="amount" />
+        <report-chart title="收入" :rows="chartRows('income')" :chart-type="chartType" :pie-mode="pieMode" metric="amount" />
       </el-col>
-      <el-col :xs="24" :lg="8">
-        <report-chart title="药品使用统计" :rows="stats.medicineUsage" :chart-type="chartType" metric="quantity" />
+      <el-col :xs="24" :lg="12">
+        <report-chart title="利润" :rows="chartRows('profit')" :chart-type="chartType" :pie-mode="pieMode" metric="amount" />
       </el-col>
-      <el-col :xs="24" :lg="8">
-        <report-chart title="耗材使用统计" :rows="stats.consumableUsage" :chart-type="chartType" metric="quantity" />
+      <el-col :xs="24" :lg="12">
+        <report-chart title="药品使用统计" :rows="chartRows('medicineUsage')" :chart-type="chartType" :pie-mode="pieMode" metric="quantity" />
       </el-col>
-      <el-col :xs="24" :lg="8">
-        <report-chart title="项目统计" :rows="stats.projectUsage" :chart-type="chartType" metric="quantity" />
+      <el-col :xs="24" :lg="12">
+        <report-chart title="耗材使用统计" :rows="chartRows('consumableUsage')" :chart-type="chartType" :pie-mode="pieMode" metric="quantity" />
+      </el-col>
+      <el-col :xs="24" :lg="12">
+        <report-chart title="项目统计" :rows="chartRows('projectUsage')" :chart-type="chartType" :pie-mode="pieMode" metric="quantity" />
       </el-col>
     </el-row>
   </div>
@@ -55,9 +75,14 @@ export default {
       summary: {},
       granularity: 'day',
       chartType: 'bar',
+      pieMode: 'category',
+      dateRange: this.getCurrentMonthRange(),
       stats: {
         purchaseCost: [],
+        purchaseCostCategory: [],
         income: [],
+        incomeCategory: [],
+        profit: [],
         medicineUsage: [],
         consumableUsage: [],
         projectUsage: []
@@ -77,26 +102,58 @@ export default {
     }
   },
   created() {
-    this.getSummary()
-    this.getStats()
+    this.refreshReports()
   },
   methods: {
+    dateQuery() {
+      if (this.dateRange && this.dateRange.length === 2) {
+        return {
+          beginTime: this.dateRange[0],
+          endTime: this.dateRange[1]
+        }
+      }
+      return {}
+    },
+    refreshReports() {
+      this.getSummary()
+      this.getStats()
+    },
+    handleDateRangeChange(value) {
+      this.dateRange = this.restoreCurrentMonthRange(value, false)
+      this.refreshReports()
+    },
     getSummary() {
-      getReportSummary().then(response => {
+      getReportSummary(this.dateQuery()).then(response => {
         this.summary = response.data || {}
       })
     },
     getStats() {
-      getReportStats({ granularity: this.granularity }).then(response => {
+      const query = { granularity: this.granularity, ...this.dateQuery() }
+      getReportStats(query).then(response => {
         this.stats = {
           purchaseCost: [],
+          purchaseCostCategory: [],
           income: [],
+          incomeCategory: [],
+          profit: [],
           medicineUsage: [],
           consumableUsage: [],
           projectUsage: [],
           ...(response.data || {})
         }
       })
+    },
+    chartRows(key) {
+      if (this.chartType !== 'pie' || this.pieMode !== 'category') {
+        return this.stats[key] || []
+      }
+      if (key === 'purchaseCost') {
+        return this.stats.purchaseCostCategory || []
+      }
+      if (key === 'income') {
+        return this.stats.incomeCategory || []
+      }
+      return this.stats[key] || []
     }
   }
 }
@@ -132,7 +189,15 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
   margin: 0 0 16px;
+}
+
+.report-filter-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 </style>

@@ -9,6 +9,15 @@ export function listAppointment(query) {
   })
 }
 
+// 查询预约下拉选项
+export function appointmentOptions(query) {
+  return request({
+    url: '/medical/appointment/options',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询预约详细
 export function getAppointment(appointmentId) {
   return request({
