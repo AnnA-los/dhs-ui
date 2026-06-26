@@ -49,6 +49,7 @@
           range-separator="-"
           start-placeholder="开始日期"
           end-placeholder="结束日期"
+          @change="handleDateRangeChange"
         ></el-date-picker>
       </el-form-item>
       <el-form-item>
@@ -203,7 +204,7 @@ export default {
       // 是否显示弹出层
       open: false,
       // 日期范围
-      dateRange: [],
+      dateRange: this.getCurrentMonthRange(),
       // 表单参数
       form: {},
       // 查询参数
@@ -251,8 +252,12 @@ export default {
     },
     /** 重置按钮操作 */
     resetQuery() {
-      this.dateRange = []
+      this.dateRange = this.getCurrentMonthRange()
       this.resetForm("queryForm")
+      this.handleQuery()
+    },
+    handleDateRangeChange(value) {
+      this.dateRange = this.restoreCurrentMonthRange(value, false)
       this.handleQuery()
     },
     // 多选框选中数据

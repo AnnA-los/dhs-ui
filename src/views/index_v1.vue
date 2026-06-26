@@ -80,7 +80,7 @@ export default {
 <style lang="scss" scoped>
 .dashboard-editor-container {
   padding: 32px;
-  background-color: rgb(240, 242, 245);
+  background-color: #f8eef7;
   position: relative;
 
   .chart-wrapper {

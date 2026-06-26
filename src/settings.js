@@ -52,5 +52,5 @@ module.exports = {
   /**
    * 底部版权文本内容
    */
-  footerContent: 'Copyright © 2018-2025 dhs-ui. All Rights Reserved.'
+  footerContent: 'Copyright © 2018-2025 医疗管理系统. All Rights Reserved.'
 }

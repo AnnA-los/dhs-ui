@@ -82,8 +82,8 @@ export default {
     activeStyle(tag) {
       if (!this.isActive(tag)) return {}
       return {
-        "background-color": this.theme,
-        "border-color": this.theme
+        "background-color": '#b86fa6',
+        "border-color": '#b86fa6'
       }
     },
     isAffix(tag) {
@@ -241,9 +241,9 @@ export default {
 .tags-view-container {
   height: 34px;
   width: 100%;
-  background: #fff;
-  border-bottom: 1px solid #d8dce5;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, .12), 0 0 3px 0 rgba(0, 0, 0, .04);
+  background: #fbf3fa;
+  border-bottom: 1px solid #ecd8e8;
+  box-shadow: 0 1px 3px 0 rgba(137, 82, 124, .10), 0 0 3px 0 rgba(137, 82, 124, .04);
   .tags-view-wrapper {
     .tags-view-item {
       display: inline-block;
@@ -251,9 +251,9 @@ export default {
       cursor: pointer;
       height: 26px;
       line-height: 26px;
-      border: 1px solid #d8dce5;
-      color: #495060;
-      background: #fff;
+      border: 1px solid #ead4e5;
+      color: #6b4b63;
+      background: #fff8fd;
       padding: 0 8px;
       font-size: 12px;
       margin-left: 5px;
@@ -265,9 +265,9 @@ export default {
         margin-right: 15px;
       }
       &.active {
-        background-color: #42b983;
+        background-color: #b86fa6;
         color: #fff;
-        border-color: #42b983;
+        border-color: #b86fa6;
         &::before {
           content: '';
           background: #fff;

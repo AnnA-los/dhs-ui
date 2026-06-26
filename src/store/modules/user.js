@@ -1,6 +1,6 @@
 import router from '@/router'
 import { MessageBox, } from 'element-ui'
-import { login, logout, getInfo } from '@/api/login'
+import { login, adminLogin, logout, getInfo } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import { isHttp, isEmpty } from "@/utils/validate"
 import defAva from '@/assets/images/profile.jpg'
@@ -51,7 +51,24 @@ const user = {
         login(username, password, code, uuid).then(res => {
           setToken(res.token)
           commit('SET_TOKEN', res.token)
-          resolve()
+          resolve(res)
+        }).catch(error => {
+          reject(error)
+        })
+      })
+    },
+
+    // 系统超管登录
+    AdminLogin({ commit }, userInfo) {
+      const username = userInfo.username.trim()
+      const password = userInfo.password
+      const code = userInfo.code
+      const uuid = userInfo.uuid
+      return new Promise((resolve, reject) => {
+        adminLogin(username, password, code, uuid).then(res => {
+          setToken(res.token)
+          commit('SET_TOKEN', res.token)
+          resolve(res)
         }).catch(error => {
           reject(error)
         })
@@ -69,10 +86,10 @@ const user = {
           }
           if (res.roles && res.roles.length > 0) { // 验证返回的roles是否是一个非空数组
             commit('SET_ROLES', res.roles)
-            commit('SET_PERMISSIONS', res.permissions)
           } else {
             commit('SET_ROLES', ['ROLE_DEFAULT'])
           }
+          commit('SET_PERMISSIONS', res.permissions || [])
           commit('SET_ID', user.userId)
           commit('SET_NAME', user.userName)
           commit('SET_NICK_NAME', user.nickName)

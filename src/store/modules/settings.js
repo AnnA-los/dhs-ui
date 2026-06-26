@@ -6,10 +6,11 @@ const { sideTheme, showSettings, navType, tagsView, tagsIcon, fixedHeader, sideb
 const storageSetting = JSON.parse(localStorage.getItem('layout-setting')) || ''
 const state = {
   title: '',
-  theme: storageSetting.theme || '#409EFF',
+  theme: storageSetting.theme || '#b86fa6',
   sideTheme: storageSetting.sideTheme || sideTheme,
   showSettings: showSettings,
-  navType: storageSetting.navType === undefined ? navType : storageSetting.navType,
+  // 医院业务端固定使用左侧菜单，避免不同域名端口的本地缓存切换成顶部导航。
+  navType: navType,
   tagsView: storageSetting.tagsView === undefined ? tagsView : storageSetting.tagsView,
   tagsIcon: storageSetting.tagsIcon === undefined ? tagsIcon : storageSetting.tagsIcon,
   fixedHeader: storageSetting.fixedHeader === undefined ? fixedHeader : storageSetting.fixedHeader,

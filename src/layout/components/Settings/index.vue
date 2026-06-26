@@ -234,7 +234,6 @@ export default {
       this.$cache.local.set(
         "layout-setting",
         `{
-            "navType":${this.navType},
             "tagsView":${this.tagsView},
             "tagsIcon":${this.tagsIcon},
             "fixedHeader":${this.fixedHeader},
