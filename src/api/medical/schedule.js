@@ -19,3 +19,15 @@ export function updateSchedule(data) {
 export function delSchedule(scheduleId) {
   return request({ url: '/medical/schedule/' + scheduleId, method: 'delete' })
 }
+
+export function getScheduleBusinessHours() {
+  return request({ url: '/medical/hospital/businessHours/current', method: 'get' })
+}
+
+export function saveScheduleBusinessHours(data) {
+  return request({
+    url: '/medical/hospital/businessHours',
+    method: data && data.businessHoursId ? 'put' : 'post',
+    data: data
+  })
+}

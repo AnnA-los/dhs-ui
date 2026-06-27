@@ -83,6 +83,38 @@ export function getCurrentMonthTimeRange() {
   return [range[0] + ' 00:00:00', range[1] + ' 23:59:59']
 }
 
+// 最近一段时间范围，默认最近一个月
+export function getRecentDateRange(months = 1, withTime = false) {
+  const end = new Date()
+  const start = new Date()
+  const currentDate = start.getDate()
+  start.setMonth(start.getMonth() - months)
+  if (start.getDate() !== currentDate) {
+    start.setDate(0)
+  }
+  const range = [parseTime(start, '{y}-{m}-{d}'), parseTime(end, '{y}-{m}-{d}')]
+  return withTime ? [range[0] + ' 00:00:00', range[1] + ' 23:59:59'] : range
+}
+
+export function getRecentMonthRange(withTime = false) {
+  return getRecentDateRange(1, withTime)
+}
+
+// 医疗页面通用日期范围快捷项
+export function getCommonDateRangePickerOptions(withTime = false) {
+  const pick = (picker, months) => {
+    picker.$emit('pick', getRecentDateRange(months, withTime))
+  }
+  return {
+    shortcuts: [
+      { text: '最近一个月', onClick: picker => pick(picker, 1) },
+      { text: '最近三个月', onClick: picker => pick(picker, 3) },
+      { text: '最近半年', onClick: picker => pick(picker, 6) },
+      { text: '最近一年', onClick: picker => pick(picker, 12) }
+    ]
+  }
+}
+
 // 日期范围清空后恢复当前自然月
 export function restoreCurrentMonthRange(value, withTime) {
   if (Array.isArray(value) && value.length === 2) {
