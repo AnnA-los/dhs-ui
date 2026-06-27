@@ -55,8 +55,8 @@
       <el-table-column v-if="activeStatus === 'REJECTED'" label="拒绝原因" prop="rejectReason" min-width="180" show-overflow-tooltip />
       <el-table-column v-if="activeStatus === 'PENDING'" label="操作" align="center" width="140">
         <template slot-scope="scope">
-          <el-button type="text" size="mini" icon="el-icon-check" @click="handleApprove(scope.row)" v-hasPermi="['medical:inviteApply:audit']">通过</el-button>
-          <el-button type="text" size="mini" icon="el-icon-close" @click="handleReject(scope.row)" v-hasPermi="['medical:inviteApply:audit']">拒绝</el-button>
+          <el-button type="text" size="mini" icon="el-icon-check" @click="handleApprove(scope.row)" v-hasPermi="['medical:hospital:invite:audit']">通过</el-button>
+          <el-button type="text" size="mini" icon="el-icon-close" @click="handleReject(scope.row)" v-hasPermi="['medical:hospital:invite:audit']">拒绝</el-button>
         </template>
       </el-table-column>
     </el-table>

@@ -22,7 +22,7 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="el-icon-plus" size="mini" @click="handleAdd" v-hasPermi="['medical:systemMessage:add']">新增消息</el-button>
+        <el-button type="primary" plain icon="el-icon-plus" size="mini" @click="handleAdd" v-hasPermi="['medical:system:message:send']">新增消息</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -50,7 +50,6 @@
       <el-table-column label="操作" align="center" width="150">
         <template slot-scope="scope">
           <el-button type="text" size="mini" icon="el-icon-view" @click="handleDetail(scope.row)">查看</el-button>
-          <el-button v-if="scope.row.sendStatus !== 'SENT'" type="text" size="mini" icon="el-icon-position" @click="handleResend(scope.row)" v-hasPermi="['medical:systemMessage:send']">发送</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -82,7 +81,6 @@
       <div slot="footer" class="dialog-footer">
         <template v-if="!detailMode">
           <el-button type="primary" :loading="submitLoading" @click="submitSend">发送</el-button>
-          <el-button :loading="submitLoading" @click="submitDraft">保存草稿</el-button>
         </template>
         <el-button @click="open = false">关 闭</el-button>
       </div>
@@ -91,7 +89,7 @@
 </template>
 
 <script>
-import { listSystemMessage, getSystemMessage, addSystemMessage, sendSystemMessage, resendSystemMessage } from '@/api/medical/systemMessage'
+import { listSystemMessage, dispatchSystemMessage } from '@/api/medical/systemMessage'
 import medicalTableHeight from '@/views/medical/mixins/tableHeight'
 
 export default {
@@ -163,37 +161,10 @@ export default {
       this.open = true
     },
     handleDetail(row) {
-      const messageId = row.messageId
-      getSystemMessage(messageId).then(response => {
-        this.form = response.data || row
-        this.detailMode = true
-        this.title = '系统消息详情'
-        this.open = true
-      }).catch(() => {
-        this.form = row
-        this.detailMode = true
-        this.title = '系统消息详情'
-        this.open = true
-      })
-    },
-    submitDraft() {
-      this.$refs.form.validate(valid => {
-        if (!valid) {
-          return
-        }
-        if (!this.hasTargets()) {
-          this.$modal.msgError('目标值不能为空')
-          return
-        }
-        this.submitLoading = true
-        addSystemMessage(this.form).then(() => {
-          this.$modal.msgSuccess('保存成功')
-          this.open = false
-          this.getList()
-        }).finally(() => {
-          this.submitLoading = false
-        })
-      })
+      this.form = row
+      this.detailMode = true
+      this.title = '系统消息详情'
+      this.open = true
     },
     submitSend() {
       this.$refs.form.validate(valid => {
@@ -205,7 +176,7 @@ export default {
           return
         }
         this.submitLoading = true
-        sendSystemMessage(this.form).then(() => {
+        dispatchSystemMessage(this.form).then(() => {
           this.$modal.msgSuccess('发送成功')
           this.open = false
           this.getList()
@@ -213,14 +184,6 @@ export default {
           this.submitLoading = false
         })
       })
-    },
-    handleResend(row) {
-      this.$modal.confirm('是否确认发送消息"' + row.messageTitle + '"？').then(() => {
-        return resendSystemMessage(row.messageId)
-      }).then(() => {
-        this.$modal.msgSuccess('发送成功')
-        this.getList()
-      }).catch(() => {})
     },
     sendStatusTag(status) {
       const map = { DRAFT: 'info', SENT: 'success', FAILED: 'danger' }

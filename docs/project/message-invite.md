@@ -25,17 +25,13 @@
 系统消息：
 
 - `GET /medical/system/message/list`
-- `GET /medical/system/message/{messageId}`
-- `POST /medical/system/message`
-- `POST /medical/system/message/send`
-- `PUT /medical/system/message/{messageId}/send`
+- `POST /medical/system/message/dispatch`
 
 邀请审核：
 
-- `GET /medical/hospital/invite/apply/list`
-- `GET /medical/hospital/invite/apply/{applyId}`
-- `PUT /medical/hospital/invite/apply/{applyId}/approve`
-- `PUT /medical/hospital/invite/apply/{applyId}/reject`
+- `GET /medical/hospital/invite/audit/list`
+- `PUT /medical/hospital/invite/audit/{applyId}/approve`
+- `PUT /medical/hospital/invite/audit/{applyId}/reject`
 
 接口返回列表兼容 `rows` 与 `data`，用于适配若依分页结构和 options 风格差异。
 
@@ -57,5 +53,5 @@
 ## 后续联调注意
 
 - 若后端最终接口路径调整，优先只改 `src/api/medical/systemMessage.js` 和 `src/api/medical/hospitalInviteApply.js`。
-- 若后端通过新增系统消息后再单独发送，应确保 `POST /medical/system/message/send` 支持直接创建并发送，或前端改为先创建再调用按 ID 发送。
-- 按钮权限当前使用 `medical:systemMessage:add`、`medical:systemMessage:send`、`medical:inviteApply:audit`，后端菜单权限需要保持一致。
+- 系统消息按后端已实现能力收敛为“创建并发送”，不在前端保留草稿和重发入口。
+- 按钮权限当前使用 `medical:system:message:send`、`medical:hospital:invite:audit`，后端菜单权限需要保持一致。

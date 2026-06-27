@@ -63,7 +63,3 @@ export function delSmsSceneTemplate(relationId) {
 export function listSmsSendLog(query) {
   return request({ url: '/system/sms/send-log/list', method: 'get', params: query })
 }
-
-export function getSmsSendLog(logId) {
-  return request({ url: '/system/sms/send-log/' + logId, method: 'get' })
-}
