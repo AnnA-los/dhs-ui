@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DHS 医疗系统 6.27 需求 UI 设计</title>
+    <style>
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif; font-size: 14px; line-height: 1.72; color: #25323a; background: #f6f9fb; }
+        .toc { position: fixed; top: 18px; left: 18px; width: 260px; max-height: calc(100vh - 36px); overflow: auto; padding: 14px; background: #fff; border: 1px solid #d9e5ec; border-radius: 8px; box-shadow: 0 8px 20px rgba(36, 50, 61, .08); }
+        .toc a { display: block; padding: 6px 8px; color: #416173; text-decoration: none; border-left: 3px solid transparent; border-radius: 4px; }
+        .toc a:hover, .toc a.active { background: #edf6f9; border-left-color: #2f80a8; color: #16324f; font-weight: 600; }
+        .page { max-width: 1240px; margin: 0 auto; padding: 26px 26px 54px 310px; }
+        header, section { background: #fff; border: 1px solid #dbe5ec; border-radius: 8px; padding: 22px 26px; margin-bottom: 18px; }
+        h1 { margin: 0 0 8px; font-size: 26px; color: #16324f; }
+        h2 { margin: 0 0 14px; padding-bottom: 8px; font-size: 19px; color: #16324f; border-bottom: 2px solid #d9e8f2; }
+        h3 { margin: 18px 0 8px; font-size: 16px; color: #244b68; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0 18px; }
+        th, td { border: 1px solid #d9e3ea; padding: 8px 10px; text-align: left; vertical-align: top; }
+        th { background: #edf4f8; color: #16324f; font-weight: 600; }
+        code { font-family: Consolas, "Courier New", monospace; background: #f0f4f7; padding: 1px 4px; border-radius: 4px; }
+        .wire { border: 1px solid #cfdde6; border-radius: 8px; background: #fbfdfe; padding: 12px; margin: 10px 0 18px; }
+        .toolbar, .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .box { border: 1px dashed #b7cbd7; border-radius: 6px; padding: 8px 10px; background: #fff; color: #3d5665; }
+        .table-box { margin-top: 10px; border: 1px solid #d9e3ea; border-radius: 6px; overflow: hidden; }
+        .table-head, .table-row { display: grid; grid-template-columns: repeat(5, 1fr); }
+        .user-table .table-head, .user-table .table-row { grid-template-columns: 1.1fr 1fr 1fr 1fr 1fr 1fr 1.1fr .8fr 1.2fr; }
+        .schedule-table .table-head, .schedule-table .table-row { grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr; }
+        .table-head div { background: #edf4f8; font-weight: 600; }
+        .table-head div, .table-row div { padding: 8px; border-right: 1px solid #d9e3ea; border-bottom: 1px solid #d9e3ea; min-height: 22px; }
+        .meta, .muted { color: #657d8b; }
+        .notice { padding: 10px 12px; background: #eef7fb; border-left: 4px solid #2f80a8; border-radius: 4px; }
+        @media (max-width: 980px) { .toc { position: static; width: auto; margin: 14px; } .page { padding: 0 14px 36px; } .table-head, .table-row, .user-table .table-head, .user-table .table-row, .schedule-table .table-head, .schedule-table .table-row { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<nav class="toc">
+    <strong>目录</strong>
+    <a href="#links">文档互链</a>
+    <a href="#principles">设计原则</a>
+    <a href="#user">医院用户</a>
+    <a href="#schedule">排班与营业时间</a>
+    <a href="#dept-role-menu">部门、角色、菜单</a>
+    <a href="#message-invite">消息与邀请审核</a>
+    <a href="#sms-login">短信与登录注册</a>
+    <a href="#states">状态与验收</a>
+</nav>
+<main class="page">
+    <header>
+        <h1>DHS 医疗系统 6.27 需求 UI 设计</h1>
+        <p class="meta">生成日期：2026-06-27；项目：dhs-ui；技术栈：Vue2 + Element UI。</p>
+        <p class="notice">本文件是本需求唯一前端 UI 设计入口。页面应保持现有若依后台的信息密度、表格/弹窗结构和权限按钮表达，不引入新的视觉体系。</p>
+    </header>
+
+    <section id="links">
+        <h2>文档互链</h2>
+        <table>
+            <tr><th>文档</th><th>路径</th></tr>
+            <tr><td>dhs-core 需求文档</td><td><code>E:\workFile\worktrees\dhs-code-medical-requirements-20260627\docs\prd\dhs-medical-prd-20260627.html</code></td></tr>
+            <tr><td>dhs-core 开发设计</td><td><code>E:\workFile\worktrees\dhs-code-medical-requirements-20260627\docs\design\dhs-medical-design-20260627.html</code></td></tr>
+            <tr><td>dhs-core 测试用例</td><td><code>E:\workFile\worktrees\dhs-code-medical-requirements-20260627\docs\test\dhs-medical-test-20260627.html</code></td></tr>
+            <tr><td>dhs-core 任务拆分</td><td><code>E:\workFile\worktrees\dhs-code-medical-requirements-20260627\docs\design\dhs-medical-tasks-20260627.md</code></td></tr>
+        </table>
+    </section>
+
+    <section id="principles">
+        <h2>设计原则</h2>
+        <ul>
+            <li>继续使用 <code>app-container</code>、搜索表单、工具栏、<code>el-table</code>、分页、<code>el-dialog</code> 和 <code>RightToolbar</code> 组合。</li>
+            <li>按钮使用现有 Element 图标和 <code>v-hasPermi</code> 权限控制；危险操作保留二次确认。</li>
+            <li>表单字段必须有可见 label；只读字段用 <code>disabled</code> 或纯文本说明，和可编辑字段区分。</li>
+            <li>远程下拉需要支持历史回显；员工、角色、部门等提交 ID，展示名称。</li>
+            <li>时间范围清空后恢复默认最近一个月，快捷项固定为最近一个月、三个月、半年、一年。</li>
+            <li>系统超管和医院超管的导航、消息、医院上下文展示分离。</li>
+        </ul>
+    </section>
+
+    <section id="user">
+        <h2>医院用户页面</h2>
+        <div class="wire">
+            <div class="toolbar">
+                <div class="box">用户：姓名/手机号</div>
+                <div class="box">部门：树选择</div>
+                <div class="box">岗位：远程下拉</div>
+                <div class="box">状态：正常/禁用</div>
+                <div class="box">搜索</div>
+                <div class="box">重置</div>
+            </div>
+            <div class="table-box user-table">
+                <div class="table-head"><div>用户名称</div><div>手机号</div><div>部门</div><div>岗位</div><div>角色</div><div>邀请人</div><div>创建时间</div><div>状态</div><div>操作</div></div>
+                <div class="table-row"><div>张医生</div><div>138****5678</div><div>口腔一部</div><div>医生</div><div>接诊医生</div><div>王院长</div><div>2026-06-27</div><div>正常</div><div>修改 删除</div></div>
+            </div>
+        </div>
+        <table>
+            <tr><th>区域</th><th>交互</th><th>状态</th></tr>
+            <tr><td>列表</td><td>移除 owner、角色层级和邮箱；新增手机号列，角色列展示角色名称；邀请人列在创建时间之前；操作列仅保留修改、删除，现有独立“角色”按钮作为重复入口移除。</td><td>无数据展示“暂无医院用户”；无权限按钮隐藏。</td></tr>
+            <tr><td>新增弹窗</td><td>用户名称、手机号、密码、角色、部门、岗位、状态；邮箱不出现不提交。</td><td>手机号必填，角色/部门/岗位必填。</td></tr>
+            <tr><td>编辑弹窗</td><td>用户名称、手机号只读或按后端权限可编辑、角色、部门、岗位、状态；角色直接在修改弹窗的角色字段中调整，不保留独立“分配角色/分配医院角色”弹窗。</td><td>owner 行操作禁用；非超管不能看到同级或上级用户，且只能选择自己可分配的低层级角色。</td></tr>
+        </table>
+    </section>
+
+    <section id="schedule">
+        <h2>排班与营业时间</h2>
+        <div class="wire">
+            <div class="toolbar">
+                <div class="box">员工：远程下拉</div>
+                <div class="box">排班类型</div>
+                <div class="box">排班日期：最近一个月</div>
+                <div class="box">营业时间</div>
+                <div class="box">新增</div>
+            </div>
+            <div class="table-box schedule-table">
+                <div class="table-head"><div>员工</div><div>手机号</div><div>部门</div><div>岗位</div><div>日期</div><div>时间</div><div>排班类型</div><div>超营业标记</div><div>操作</div></div>
+                <div class="table-row"><div>李护士</div><div>139****1234</div><div>口腔一部</div><div>护士</div><div>2026-06-27</div><div>08:30-17:30</div><div>有排班</div><div>超营业时间</div><div>修改 删除</div></div>
+            </div>
+        </div>
+        <table>
+            <tr><th>弹窗</th><th>字段</th><th>交互</th></tr>
+            <tr><td>排班列表</td><td>员工、手机号、部门、岗位、日期、时间、排班类型、超营业标记、操作。</td><td>部门和岗位是列表展示字段，保留现有展示；不要因为弹窗不回填部门、岗位而删除列表列。</td></tr>
+            <tr><td>排班新增/编辑</td><td>员工、手机号只读、日期范围、排班类型、开始时间、结束时间、预约粒度、最大预约数、备注。</td><td>员工下拉只显示姓名；选择员工后手机号字段带出，不带出部门、岗位、角色、层级。</td></tr>
+            <tr><td>超营业确认</td><td>显示营业时间、排班时间、超出原因。</td><td>点击“继续保存”后重提；点击取消回到排班弹窗。</td></tr>
+            <tr><td>营业时间</td><td>工作日营业时间、营业日期规则、每周休息、每月休息。</td><td>规则切换时只显示相关字段；保存后刷新排班页提示。</td></tr>
+        </table>
+    </section>
+
+    <section id="dept-role-menu">
+        <h2>部门、角色、菜单</h2>
+        <table>
+            <tr><th>页面</th><th>布局</th><th>权限差异</th></tr>
+            <tr><td>医院部门</td><td>树形表格；操作列增加“新增子部门”；上级部门用树选择。</td><td>第 11 层前端阻止保存，后端兜底。</td></tr>
+            <tr><td>医院角色</td><td>列表去掉默认列；角色名称、角色层级、状态、创建时间、操作等按现有后台表格展示。编辑弹窗中角色名称和角色层级置灰不可修改，权限树只展示自己已有权限。</td><td>默认角色修改权限时，对用户无感复制为当前医院替换角色并迁移成员；默认角色停用或删除前必须无成员，有成员时提示不可操作。owner 可见全部医疗权限；非 owner 不能授予自己没有的权限。</td></tr>
+            <tr><td>系统菜单</td><td>业务菜单显示默认可见角色多选：超级管理员、合伙人、管理员、员工；旁边显示说明文字，不展示角色层级数字。</td><td>新增业务菜单必选；编辑默认可见角色会影响仍使用默认角色的医院，不影响已替换默认角色的医院。</td></tr>
+        </table>
+    </section>
+
+    <section id="message-invite">
+        <h2>系统消息与邀请审核</h2>
+        <table>
+            <tr><th>页面</th><th>结构</th><th>异常/空状态</th></tr>
+            <tr><td>系统消息发送</td><td>搜索区按标题、目标类型、发送状态；列表展示标题、目标、发送数量、状态、创建时间；弹窗填写标题、内容、目标类型和值。</td><td>目标解析为空时不允许发送；发送失败展示失败原因。</td></tr>
+            <tr><td>右上角消息</td><td>复用现有通知 popover；系统消息和医院消息按时间倒序展示，未读带圆点。</td><td>无消息展示“暂无消息”；点击消息后标记已读。</td></tr>
+            <tr><td>邀请审核</td><td>页签：待审核、审核通过、审核拒绝；列表展示申请人、手机号、邀请人、邀请码、状态和时间。</td><td>通过弹窗必须选角色、部门、岗位；拒绝弹窗必须填拒绝原因；拒绝后可再次申请。</td></tr>
+        </table>
+    </section>
+
+    <section id="sms-login">
+        <h2>短信配置与登录注册</h2>
+        <table>
+            <tr><th>页面</th><th>字段/交互</th><th>特殊状态</th></tr>
+            <tr><td>短信渠道</td><td>渠道编码、渠道名称、启用状态、创建时间；新增可填编码名称，编辑编码和名称置灰。</td><td>存在启用模板或场景关联时禁用/删除需后端拦截并提示。</td></tr>
+            <tr><td>短信模板</td><td>模板编码、模板名称、场景编码、渠道名称、签名、优先级、状态；编辑编码和名称置灰。</td><td>渠道下拉展示渠道名称，提交渠道编码。</td></tr>
+            <tr><td>场景关联</td><td>场景编码、短信模板下拉、状态；同一场景只能一条启用。</td><td>模板下拉展示模板名称，提交模板编码。</td></tr>
+            <tr><td>发送日志</td><td>手机号、模板名称、场景编码、状态、渠道名称筛选；列表手机号和错误详情脱敏。</td><td>失败原因可用弹窗查看脱敏详情。</td></tr>
+            <tr><td>登录注册</td><td>只保留手机号入口；邮箱 Tab 和邮箱输入移除。</td><td>真实短信关闭时验证码输入和发送按钮隐藏；系统图形验证码是否保留按后端配置。</td></tr>
+        </table>
+    </section>
+
+    <section id="states">
+        <h2>状态与验收</h2>
+        <table>
+            <tr><th>状态</th><th>页面处理</th></tr>
+            <tr><td>加载中</td><td>沿用 <code>v-loading</code>，按钮保存期间显示 loading 或禁用。</td></tr>
+            <tr><td>空数据</td><td>Element 表格默认空态；关键审核/消息页面空态文案保持简短。</td></tr>
+            <tr><td>无权限</td><td>按钮隐藏或禁用；后端拒绝时展示后端错误信息。</td></tr>
+            <tr><td>重复提交</td><td>保持全局 request 1 秒重复提交拦截，页面不吞掉错误。</td></tr>
+            <tr><td>移动窄屏</td><td>后台主要面向桌面；弹窗宽度使用 560-760px，窄屏按 Element 默认自适应滚动。</td></tr>
+        </table>
+    </section>
+</main>
+<script>
+    const links = Array.from(document.querySelectorAll('.toc a'));
+    const sections = links.map(link => document.querySelector(link.getAttribute('href'))).filter(Boolean);
+    function syncToc() {
+        let active = sections[0];
+        sections.forEach(section => { if (section.getBoundingClientRect().top <= 120) active = section; });
+        links.forEach(link => link.classList.toggle('active', link.getAttribute('href') === '#' + active.id));
+    }
+    document.addEventListener('scroll', syncToc, { passive: true });
+    window.addEventListener('load', syncToc);
+</script>
+</body>
+</html>
