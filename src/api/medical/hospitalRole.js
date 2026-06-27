@@ -4,6 +4,10 @@ export function listHospitalRole(query) {
   return request({ url: '/medical/hospital/role/list', method: 'get', params: query })
 }
 
+export function defaultHospitalRoleOptions() {
+  return request({ url: '/medical/hospital/role/list', method: 'get', params: { pageNum: 1, pageSize: 100, hospitalId: 0, isDefault: '1', status: '0' } })
+}
+
 export function getHospitalRole(roleId) {
   return request({ url: '/medical/hospital/role/' + roleId, method: 'get' })
 }

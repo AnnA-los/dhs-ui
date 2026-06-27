@@ -254,6 +254,29 @@
           </el-col>
         </el-row>
         <el-row>
+          <el-col :span="24" v-if="isBusinessMenu">
+            <el-form-item label="默认可见角色" prop="defaultHospitalRoleIdValues">
+              <el-select
+                v-model="form.defaultHospitalRoleIdValues"
+                multiple
+                clearable
+                placeholder="请选择默认可见角色"
+                style="width: 100%;"
+              >
+                <el-option
+                  v-for="item in defaultHospitalRoleOptions"
+                  :key="item.roleId"
+                  :label="item.roleName"
+                  :value="String(item.roleId)"
+                />
+              </el-select>
+              <div v-if="form.menuId" class="form-tip">
+                影响仍使用默认角色的医院，不影响已替换角色的医院
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
           <el-col :span="12" v-if="form.menuType != 'F'">
             <el-form-item prop="visible">
               <span slot="label">
@@ -300,6 +323,7 @@
 
 <script>
 import { listMenu, getMenu, delMenu, addMenu, updateMenu } from "@/api/system/menu"
+import { defaultHospitalRoleOptions } from "@/api/medical/hospitalRole"
 import Treeselect from "@riophae/vue-treeselect"
 import "@riophae/vue-treeselect/dist/vue-treeselect.css"
 import IconSelect from "@/components/IconSelect"
@@ -318,6 +342,8 @@ export default {
       menuList: [],
       // 菜单树选项
       menuOptions: [],
+      // 医疗业务菜单默认可见角色选项
+      defaultHospitalRoleOptions: [],
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -343,12 +369,29 @@ export default {
         ],
         path: [
           { required: true, message: "路由地址不能为空", trigger: "blur" }
+        ],
+        defaultHospitalRoleIdValues: [
+          { validator: this.validateDefaultHospitalRoles, trigger: "change" }
         ]
       }
     }
   },
   created() {
     this.getList()
+  },
+  computed: {
+    isBusinessMenu() {
+      return this.isBusinessMenuForm(this.form)
+    }
+  },
+  watch: {
+    isBusinessMenu(value) {
+      if (!value && this.form) {
+        this.$set(this.form, 'defaultHospitalRoleIdValues', [])
+      } else if (value && this.defaultHospitalRoleOptions.length === 0) {
+        this.getDefaultHospitalRoleOptions()
+      }
+    }
   },
   methods: {
     // 选择图标
@@ -361,6 +404,16 @@ export default {
       listMenu(this.queryParams).then(response => {
         this.menuList = this.handleTree(response.data, "menuId")
         this.loading = false
+      })
+    },
+    getDefaultHospitalRoleOptions() {
+      defaultHospitalRoleOptions().then(response => {
+        const rows = response.rows || response.data || []
+        this.defaultHospitalRoleOptions = rows
+          .filter(item => item.isDefault === '1')
+          .sort((a, b) => Number(a.roleLevel || 0) - Number(b.roleLevel || 0))
+      }).catch(() => {
+        this.defaultHospitalRoleOptions = []
       })
     },
     /** 转换菜单数据结构 */
@@ -399,6 +452,8 @@ export default {
         orderNum: undefined,
         isFrame: "1",
         isCache: "0",
+        defaultHospitalRoleIds: undefined,
+        defaultHospitalRoleIdValues: [],
         visible: "0",
         status: "0"
       }
@@ -439,22 +494,55 @@ export default {
       this.getTreeselect()
       getMenu(row.menuId).then(response => {
         this.form = response.data
+        this.$set(this.form, 'defaultHospitalRoleIdValues', this.parseDefaultHospitalRoleIds(this.form.defaultHospitalRoleIds))
         this.open = true
         this.title = "修改菜单"
       })
+    },
+    validateDefaultHospitalRoles(rule, value, callback) {
+      if (this.isBusinessMenu && !this.form.menuId && (!value || value.length === 0)) {
+        callback(new Error("新增业务菜单默认可见角色不能为空"))
+      } else {
+        callback()
+      }
+    },
+    parseDefaultHospitalRoleIds(value) {
+      if (Array.isArray(value)) {
+        return value.map(item => String(item))
+      }
+      if (value === undefined || value === null || value === '') {
+        return []
+      }
+      return String(value).split(',').filter(Boolean).map(item => item.trim())
+    },
+    formatDefaultHospitalRoleIds() {
+      const values = this.form.defaultHospitalRoleIdValues || []
+      return values.length ? values.join(',') : ''
+    },
+    isBusinessMenuForm(form) {
+      if (!form) {
+        return false
+      }
+      const perms = (form.perms || '').trim()
+      const path = (form.path || '').replace(/^\//, '')
+      const component = (form.component || '').replace(/^\//, '')
+      return perms.indexOf('medical:') === 0 || path.indexOf('medical') === 0 || component.indexOf('medical') === 0
     },
     /** 提交按钮 */
     submitForm: function() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          if (this.form.menuId != undefined) {
-            updateMenu(this.form).then(response => {
+          const payload = Object.assign({}, this.form)
+          payload.defaultHospitalRoleIds = this.isBusinessMenu ? this.formatDefaultHospitalRoleIds() : undefined
+          delete payload.defaultHospitalRoleIdValues
+          if (payload.menuId != undefined) {
+            updateMenu(payload).then(response => {
               this.$modal.msgSuccess("修改成功")
               this.open = false
               this.getList()
             })
           } else {
-            addMenu(this.form).then(response => {
+            addMenu(payload).then(response => {
               this.$modal.msgSuccess("新增成功")
               this.open = false
               this.getList()
@@ -475,3 +563,12 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.form-tip {
+  margin-top: 4px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
+}
+</style>
