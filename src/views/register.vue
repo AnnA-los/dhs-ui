@@ -2,18 +2,9 @@
   <div class="register">
     <el-form ref="registerForm" :model="registerForm" :rules="registerRules" class="register-form" autocomplete="off">
       <h3 class="title">{{ title }}</h3>
-      <el-tabs v-model="registerType" stretch class="register-tabs">
-        <el-tab-pane label="手机号注册" name="phone" />
-        <el-tab-pane label="邮箱注册" name="email" />
-      </el-tabs>
-      <el-form-item v-if="registerType === 'phone'" prop="phonenumber">
+      <el-form-item prop="phonenumber">
         <el-input v-model="registerForm.phonenumber" name="register_phone" type="text" autocomplete="off" auto-complete="off" placeholder="手机号">
           <svg-icon slot="prefix" icon-class="phone" class="el-input__icon input-icon" />
-        </el-input>
-      </el-form-item>
-      <el-form-item v-else prop="email">
-        <el-input v-model="registerForm.email" name="register_email" type="text" autocomplete="off" auto-complete="off" placeholder="邮箱">
-          <svg-icon slot="prefix" icon-class="email" class="el-input__icon input-icon" />
         </el-input>
       </el-form-item>
       <el-form-item prop="inviteCode">
@@ -90,11 +81,9 @@ export default {
       title: process.env.VUE_APP_TITLE,
       footerContent: defaultSettings.footerContent,
       codeUrl: '',
-      registerType: 'phone',
       registerForm: {
         username: '',
         phonenumber: '',
-        email: '',
         hospitalName: '',
         hospitalType: '',
         inviteCode: '',
@@ -107,10 +96,6 @@ export default {
           { required: true, trigger: 'blur', message: '请输入手机号' },
           { min: 11, max: 11, message: '手机号长度必须为 11 位', trigger: 'blur' }
         ],
-        email: [
-          { required: true, trigger: 'blur', message: '请输入邮箱' },
-          { type: 'email', message: '邮箱格式不正确', trigger: 'blur' }
-        ],
         hospitalName: [{ required: true, trigger: 'blur', message: '请输入医院/诊所名称' }],
         password: [
           { required: true, trigger: 'blur', message: '请输入您的密码' },
@@ -121,13 +106,6 @@ export default {
       },
       loading: false,
       captchaEnabled: true
-    }
-  },
-  watch: {
-    registerType() {
-      this.registerForm.username = ''
-      this.registerForm.phonenumber = ''
-      this.registerForm.email = ''
     }
   },
   created() {
@@ -151,22 +129,22 @@ export default {
         if (this.captchaEnabled) {
           this.codeUrl = 'data:image/gif;base64,' + res.img
           this.registerForm.uuid = res.uuid
+        } else {
+          this.codeUrl = ''
+          this.registerForm.code = ''
+          this.registerForm.uuid = ''
         }
       })
     },
     handleRegister() {
-      this.registerForm.username = this.registerType === 'phone' ? this.registerForm.phonenumber : this.registerForm.email
+      this.registerForm.username = this.registerForm.phonenumber
       this.$refs.registerForm.validate(valid => {
         if (!valid) {
           return
         }
         this.loading = true
         const payload = Object.assign({}, this.registerForm)
-        if (this.registerType === 'phone') {
-          payload.email = ''
-        } else {
-          payload.phonenumber = ''
-        }
+        delete payload.email
         if (payload.inviteCode) {
           payload.hospitalName = ''
           payload.hospitalType = ''
@@ -202,9 +180,6 @@ export default {
   margin: 0 auto 18px auto;
   text-align: center;
   color: #707070;
-}
-.register-tabs {
-  margin-bottom: 16px;
 }
 .register-form {
   border-radius: 6px;
