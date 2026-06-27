@@ -26,10 +26,10 @@
           <size-select id="size-select" class="right-menu-item hover-effect" />
         </el-tooltip>
 
-        <el-popover v-if="showHospitalNotification" placement="bottom-end" width="360" trigger="click" popper-class="hospital-notification-popper" class="notification-popover" @show="loadNotifications">
+        <el-popover v-if="showHospitalNotification" placement="bottom-end" width="380" trigger="click" popper-class="hospital-notification-popper" class="notification-popover" @show="loadNotifications">
           <div class="notification-panel">
-            <div class="notification-title">医院通知</div>
-            <div v-if="notifications.length === 0" class="notification-empty">暂无通知</div>
+            <div class="notification-title">消息</div>
+            <div v-if="notifications.length === 0" class="notification-empty">暂无消息</div>
             <div
               v-for="item in notifications"
               :key="item.notificationId"
@@ -37,7 +37,10 @@
               :class="{ unread: item.readStatus === '0' }"
               @click="markNotificationRead(item)"
             >
-              <div class="notification-item-title">{{ item.noticeTitle }}</div>
+              <div class="notification-item-header">
+                <div class="notification-item-title">{{ item.noticeTitle }}</div>
+                <el-tag size="mini" :type="notificationTypeTag(item.businessType)">{{ notificationTypeName(item.businessType) }}</el-tag>
+              </div>
               <div class="notification-item-content">{{ item.noticeContent }}</div>
               <div class="notification-item-time">{{ item.createTime }}</div>
             </div>
@@ -163,7 +166,7 @@ export default {
       return this.roles.includes('admin') || this.permissions.includes('*:*:*')
     },
     showHospitalNotification() {
-      return !this.showSystemTools && this.currentHospitalUser.isAdmin === '1'
+      return !this.showSystemTools && !!this.currentHospitalUser.hospitalUserId
     },
     navType: {
       get() {
@@ -274,6 +277,15 @@ export default {
         item.readStatus = '1'
         this.unreadNotifications = Math.max(0, this.unreadNotifications - 1)
       })
+    },
+    notificationTypeName(businessType) {
+      if (businessType === 'SYSTEM_MESSAGE') {
+        return '系统消息'
+      }
+      return '医院消息'
+    },
+    notificationTypeTag(businessType) {
+      return businessType === 'SYSTEM_MESSAGE' ? 'primary' : 'info'
     },
     roleLevelName(roleLevel, isAdmin) {
       if (isAdmin === '1') {
@@ -539,6 +551,17 @@ export default {
 .notification-item-title {
   font-weight: 600;
   color: #303133;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .notification-item-content {

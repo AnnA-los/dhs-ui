@@ -22,6 +22,7 @@
 4. [risks-and-legacy.md](./risks-and-legacy.md)：历史特殊处理、主要风险、不能随手改的地方。
 5. [pitfalls.md](./pitfalls.md)：高频踩坑、根因、解决方案。
 6. [development-guide.md](./development-guide.md)：新增功能、调试、联调、发布前检查清单。
+7. [message-invite.md](./message-invite.md)：系统消息与邀请审核页面、接口和联调约定。
 
 强制要求：进行需求文档、开发设计、测试用例、任务拆分或功能开发前，必须先枚举并阅读或检索 `docs/project/` 下的所有文档文件，不能只阅读本 README 或上述阅读顺序中的部分文档；其中 `pitfalls.md` 不只是在开始前阅读，开发全过程都必须依照其自查项避免重复踩坑。跨仓需求还必须同步枚举并阅读或检索 `dhs-core` 的 `docs/project/` 下所有文档文件，尤其是 `docs/project/pitfalls-and-fixes.md`。
 
