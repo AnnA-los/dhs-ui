@@ -655,3 +655,27 @@
 - 不要把“弹窗不回填部门/岗位/角色”扩大成“列表删除部门/岗位列”。
 - 不要只做前端本地营业时间判断，最终能否保存和标记必须以后端响应为准。
 
+## 29. 系统超管 Navbar 不能抢跑医院上下文接口
+
+现象：
+
+- 系统超管通过 `/admin-login` 登录后，右上角短暂显示“未选择医院”或触发医院上下文接口 404。
+- 浏览器 Network 中出现 `/medical/hospital/current`、`/medical/hospital/my` 或医院通知接口请求。
+
+根因：
+
+- 系统超管不绑定医院上下文，不能请求医疗业务上下文接口。
+- Navbar 如果在 Vuex `roles`、`permissions` 尚未加载完成时按普通医院用户初始化，会误调用医院接口。
+
+解决方案：
+
+- Navbar 先等待 `roles` 或 `permissions` 至少一个就绪，再判断系统超管。
+- `roles.includes('admin')` 或 `permissions.includes('*:*:*')` 时，右上角固定显示“系统管理后台 / 系统超管”，清空医院列表、通知和切换弹窗状态。
+- 系统超管分支不要调用 `/medical/hospital/current`、`/medical/hospital/my`、`/medical/hospital/notification/mine` 等医院上下文接口。
+
+避免方式：
+
+- 修改顶部栏、通知、医院切换时，先区分系统超管和医院用户。
+- 不要在 `created` 钩子里无条件加载医院上下文；要等权限态就绪后再决定加载哪一类上下文。
+- 验收系统超管后台时查看 Network，确认没有医院上下文接口请求且不出现 404。
+

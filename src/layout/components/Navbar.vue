@@ -141,7 +141,9 @@ export default {
       myHospitals: [],
       notifications: [],
       unreadNotifications: 0,
-      switchOpen: false
+      switchOpen: false,
+      hospitalContextLoaded: false,
+      navbarContextTimer: null
     }
   },
   computed: {
@@ -160,10 +162,16 @@ export default {
       }
     },
     showSystemLayoutSetting() {
-      return this.setting && (this.roles.includes('admin') || this.permissions.includes('*:*:*'))
+      return this.setting && this.isSystemAdmin
     },
     showSystemTools() {
+      return this.isSystemAdmin
+    },
+    isSystemAdmin() {
       return this.roles.includes('admin') || this.permissions.includes('*:*:*')
+    },
+    authReady() {
+      return this.roles.length > 0 || this.permissions.length > 0
     },
     showHospitalNotification() {
       return !this.showSystemTools && !!this.currentHospitalUser.hospitalUserId
@@ -198,7 +206,18 @@ export default {
     }
   },
   created() {
-    this.loadMyHospitals()
+    this.scheduleNavbarContextRefresh()
+  },
+  beforeDestroy() {
+    window.clearTimeout(this.navbarContextTimer)
+  },
+  watch: {
+    roles() {
+      this.scheduleNavbarContextRefresh()
+    },
+    permissions() {
+      this.scheduleNavbarContextRefresh()
+    }
   },
   methods: {
     handleAvatarError(event) {
@@ -213,12 +232,37 @@ export default {
     setLayout() {
       this.$emit('setLayout')
     },
+    scheduleNavbarContextRefresh() {
+      window.clearTimeout(this.navbarContextTimer)
+      this.navbarContextTimer = window.setTimeout(() => {
+        this.refreshNavbarContext()
+      }, 0)
+    },
+    refreshNavbarContext() {
+      if (!this.authReady) {
+        return
+      }
+      if (this.isSystemAdmin) {
+        this.clearHospitalContext()
+        this.hospitalContextLoaded = true
+        return
+      }
+      if (this.hospitalContextLoaded) {
+        return
+      }
+      this.hospitalContextLoaded = true
+      this.loadMyHospitals()
+    },
+    clearHospitalContext() {
+      this.currentHospital = {}
+      this.myHospitals = []
+      this.notifications = []
+      this.unreadNotifications = 0
+      this.switchOpen = false
+    },
     loadMyHospitals() {
-      if (this.showSystemTools) {
-        this.currentHospital = {}
-        this.myHospitals = []
-        this.notifications = []
-        this.unreadNotifications = 0
+      if (this.isSystemAdmin) {
+        this.clearHospitalContext()
         return
       }
       getCurrentHospital().then(response => {

@@ -5,20 +5,16 @@
         <img :src="logo" alt="DHS logo" class="login-brand-logo" />
         <h3 class="title">{{ title }}</h3>
       </div>
-      <el-tabs v-model="loginType" stretch class="login-tabs">
-        <el-tab-pane label="手机号登录" name="phone" />
-        <el-tab-pane label="邮箱登录" name="email" />
-      </el-tabs>
       <el-form-item prop="username">
         <el-input
           v-model="loginForm.username"
-          :name="loginType === 'phone' ? 'login_phone' : 'login_email'"
+          name="login_phone"
           type="text"
           autocomplete="off"
           auto-complete="off"
-          :placeholder="loginType === 'phone' ? '请输入手机号' : '请输入邮箱'"
+          placeholder="请输入手机号"
         >
-          <svg-icon slot="prefix" :icon-class="loginType === 'phone' ? 'phone' : 'email'" class="el-input__icon input-icon" />
+          <svg-icon slot="prefix" icon-class="phone" class="el-input__icon input-icon" />
         </el-input>
       </el-form-item>
       <el-form-item prop="password">
@@ -108,7 +104,6 @@ export default {
       logo: logoImg,
       footerContent: defaultSettings.footerContent,
       codeUrl: '',
-      loginType: 'phone',
       loginForm: {
         username: '',
         password: '',
@@ -117,7 +112,7 @@ export default {
         uuid: ''
       },
       loginRules: {
-        username: [{ required: true, trigger: 'blur', message: '请输入登录账号' }],
+        username: [{ required: true, trigger: 'blur', message: '请输入手机号' }],
         password: [{ required: true, trigger: 'blur', message: '请输入您的密码' }],
         code: [{ required: true, trigger: 'change', message: '请输入验证码' }]
       },
@@ -136,9 +131,6 @@ export default {
         this.redirect = route.query && route.query.redirect
       },
       immediate: true
-    },
-    loginType() {
-      this.loginForm.username = ''
     }
   },
   created() {
@@ -152,6 +144,10 @@ export default {
         if (this.captchaEnabled) {
           this.codeUrl = 'data:image/gif;base64,' + res.img
           this.loginForm.uuid = res.uuid
+        } else {
+          this.codeUrl = ''
+          this.loginForm.code = ''
+          this.loginForm.uuid = ''
         }
       })
     },
@@ -159,12 +155,15 @@ export default {
       const username = Cookies.get('username')
       const password = Cookies.get('password')
       const rememberMe = Cookies.get('rememberMe')
-      this.loginForm.username = username || ''
-      this.loginForm.password = password === undefined ? '' : decrypt(password)
-      this.loginForm.rememberMe = rememberMe === undefined ? false : Boolean(rememberMe)
-      if (this.loginForm.username && this.loginForm.username.indexOf('@') > -1) {
-        this.loginType = 'email'
+      const isEmailAccount = username && username.indexOf('@') > -1
+      if (isEmailAccount) {
+        Cookies.remove('username')
+        Cookies.remove('password')
+        Cookies.remove('rememberMe')
       }
+      this.loginForm.username = isEmailAccount ? '' : (username || '')
+      this.loginForm.password = isEmailAccount || password === undefined ? '' : decrypt(password)
+      this.loginForm.rememberMe = isEmailAccount || rememberMe === undefined ? false : Boolean(rememberMe)
     },
     handleLogin() {
       this.$refs.loginForm.validate(valid => {
@@ -261,9 +260,6 @@ export default {
   text-align: center;
   color: #25324b;
   font-weight: 600;
-}
-.login-tabs {
-  margin-bottom: 16px;
 }
 .login-form {
   border-radius: 6px;
