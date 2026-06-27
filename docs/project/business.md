@@ -19,6 +19,7 @@
 - 排班/随访：`schedule`、`followup`
 - 报表/日志：`report`、`businessLog`
 - 其他资料：`equipment`、`material`
+- 系统短信底座：页面在 `src/views/system/sms`，为登录注册验证码、邀请审核通知等医疗场景提供渠道、模板、场景关联和发送日志配置。
 
 ## 多医院上下文
 
