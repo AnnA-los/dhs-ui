@@ -11,8 +11,8 @@
           以患者档案、预约接诊、收费明细、药品耗材、员工权限和经营报表为核心，支撑多诊所独立使用和院内精细化协作。
         </p>
         <div class="hero-actions">
-          <el-button type="primary" icon="el-icon-data-analysis" @click="goMenu('经营报表', '/medicalFinance/report')">查看经营报表</el-button>
-          <el-button icon="el-icon-user" @click="goMenu('患者档案', '/medicalPatient/patient')">进入患者管理</el-button>
+          <el-button type="primary" icon="el-icon-data-analysis" @click="goMenu('经营报表')">查看经营报表</el-button>
+          <el-button icon="el-icon-user" @click="goMenu('患者档案')">进入患者管理</el-button>
         </div>
         <div class="hero-lower">
           <div class="hero-metrics">
@@ -160,9 +160,13 @@ export default {
     }
   },
   methods: {
-    goMenu(title, fallbackPath) {
+    goMenu(title) {
       const menuPath = this.findMenuPath(this.$store.state.permission.sidebarRouters || [], title)
-      this.$router.push(menuPath || fallbackPath)
+      if (menuPath) {
+        this.$router.push(menuPath)
+        return
+      }
+      this.$modal.msgWarning(`暂无「${title}」菜单权限`)
     },
     findMenuPath(routes, title, parentPath = '') {
       for (const route of routes) {

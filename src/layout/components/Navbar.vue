@@ -52,7 +52,7 @@
 
       <el-dropdown class="hospital-container right-menu-item hover-effect" trigger="click" @command="handleHospitalCommand">
         <div class="hospital-wrapper">
-          <img :src="avatar" class="user-avatar">
+          <img :src="avatar" class="user-avatar" @error="handleAvatarError">
           <span class="hospital-name">{{ currentHospitalName }}</span>
           <el-tag size="mini" effect="plain">{{ currentRoleName }}</el-tag>
           <i class="el-icon-arrow-down el-icon--right"></i>
@@ -116,6 +116,7 @@ import DhsUiGit from '@/components/DhsUi/Git'
 import DhsUiDoc from '@/components/DhsUi/Doc'
 import { getCurrentHospital, listMyHospitals, switchHospital } from '@/api/medical/hospital'
 import { mineHospitalNotifications, readHospitalNotification } from '@/api/medical/hospitalNotification'
+import defAva from '@/assets/images/profile.jpg'
 
 export default {
   emits: ['setLayout'],
@@ -178,9 +179,15 @@ export default {
       return this.myHospitals.find(item => this.isCurrentHospital(item)) || this.myHospitals.find(item => item.hospitalId === this.currentHospital.hospitalId) || {}
     },
     currentHospitalName() {
+      if (this.showSystemTools) {
+        return '系统管理后台'
+      }
       return this.currentHospital.hospitalName || this.currentHospitalUser.hospitalName || '未选择医院'
     },
     currentRoleName() {
+      if (this.showSystemTools) {
+        return '系统超管'
+      }
       return this.roleLevelName(this.currentHospitalUser.roleLevel, this.currentHospitalUser.isAdmin)
     },
     currentAccount() {
@@ -191,6 +198,12 @@ export default {
     this.loadMyHospitals()
   },
   methods: {
+    handleAvatarError(event) {
+      if (event && event.target && !event.target.dataset.fallbackAvatar) {
+        event.target.dataset.fallbackAvatar = 'true'
+        event.target.src = defAva
+      }
+    },
     toggleSideBar() {
       this.$store.dispatch('app/toggleSideBar')
     },
@@ -198,6 +211,13 @@ export default {
       this.$emit('setLayout')
     },
     loadMyHospitals() {
+      if (this.showSystemTools) {
+        this.currentHospital = {}
+        this.myHospitals = []
+        this.notifications = []
+        this.unreadNotifications = 0
+        return
+      }
       getCurrentHospital().then(response => {
         this.currentHospital = response.data || {}
       }).catch(() => {
