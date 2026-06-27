@@ -2,7 +2,17 @@
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch">
       <el-form-item label="用户" prop="nickName">
-        <el-input v-model="queryParams.nickName" placeholder="昵称/手机号/邮箱" clearable @keyup.enter.native="handleQuery" />
+        <el-input v-model="queryParams.nickName" placeholder="姓名/手机号" clearable @keyup.enter.native="handleQuery" />
+      </el-form-item>
+      <el-form-item label="部门" prop="deptId">
+        <el-select v-model="queryParams.deptId" placeholder="请选择部门" clearable>
+          <el-option v-for="dept in deptOptions" :key="dept.deptId" :label="dept.deptName" :value="dept.deptId" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="岗位" prop="postId">
+        <el-select v-model="queryParams.postId" filterable remote clearable placeholder="请选择岗位" :remote-method="remotePosts" :loading="postLoading">
+          <el-option v-for="post in postOptions" :key="post.postId" :label="post.postName" :value="post.postId" />
+        </el-select>
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" clearable>
@@ -27,20 +37,20 @@
       <el-table-column label="用户" prop="nickName" min-width="150" show-overflow-tooltip>
         <template slot-scope="scope">{{ scope.row.nickName || scope.row.userName || '-' }}</template>
       </el-table-column>
+      <el-table-column label="手机号" prop="phonenumber" min-width="130" show-overflow-tooltip>
+        <template slot-scope="scope">{{ scope.row.phonenumber || '-' }}</template>
+      </el-table-column>
       <el-table-column label="部门" prop="deptName" min-width="130" show-overflow-tooltip>
         <template slot-scope="scope">{{ scope.row.deptName || '-' }}</template>
       </el-table-column>
       <el-table-column label="岗位" prop="postName" min-width="120" show-overflow-tooltip>
         <template slot-scope="scope">{{ scope.row.postName || '-' }}</template>
       </el-table-column>
+      <el-table-column label="角色" min-width="150" show-overflow-tooltip>
+        <template slot-scope="scope">{{ formatRoleNames(scope.row) }}</template>
+      </el-table-column>
       <el-table-column label="邀请人" prop="inviterUserName" min-width="120" show-overflow-tooltip>
         <template slot-scope="scope">{{ scope.row.inviterUserName || '-' }}</template>
-      </el-table-column>
-      <el-table-column label="owner" prop="isAdmin" width="80">
-        <template slot-scope="scope">{{ scope.row.isAdmin === '1' ? '是' : '否' }}</template>
-      </el-table-column>
-      <el-table-column label="角色层级" prop="roleLevel" width="110">
-        <template slot-scope="scope">{{ roleLevelName(scope.row.roleLevel, scope.row.isAdmin) }}</template>
       </el-table-column>
       <el-table-column label="状态" prop="status" width="90">
         <template slot-scope="scope">{{ scope.row.status === '0' ? '正常' : '停用' }}</template>
@@ -51,7 +61,6 @@
       <el-table-column label="操作" align="center" width="210">
         <template slot-scope="scope">
           <el-button type="text" size="mini" icon="el-icon-edit" :disabled="isOwner(scope.row)" @click="handleUpdate(scope.row)">修改</el-button>
-          <el-button type="text" size="mini" icon="el-icon-key" :disabled="isOwner(scope.row)" @click="handleRole(scope.row)">角色</el-button>
           <el-button type="text" size="mini" icon="el-icon-delete" :disabled="isOwner(scope.row)" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>
@@ -61,9 +70,8 @@
     <el-dialog :title="title" :visible.sync="open" width="560px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="用户名称" prop="nickName"><el-input v-model="form.nickName" /></el-form-item>
+        <el-form-item label="手机号码" prop="phonenumber"><el-input v-model="form.phonenumber" /></el-form-item>
         <template v-if="!form.hospitalUserId">
-          <el-form-item label="手机号码"><el-input v-model="form.phonenumber" /></el-form-item>
-          <el-form-item label="邮箱"><el-input v-model="form.email" /></el-form-item>
           <el-form-item label="登录密码" prop="password"><el-input v-model="form.password" type="password" show-password /></el-form-item>
         </template>
         <el-form-item label="用户角色" prop="roleIds">
@@ -81,27 +89,23 @@
             <el-option v-for="post in postOptions" :key="post.postId" :label="post.postName" :value="post.postId" />
           </el-select>
         </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-radio-group v-model="form.status">
+            <el-radio label="0">正常</el-radio>
+            <el-radio label="1">停用</el-radio>
+          </el-radio-group>
+        </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitForm">确 定</el-button>
         <el-button @click="open = false">取 消</el-button>
       </div>
     </el-dialog>
-
-    <el-dialog title="分配医院角色" :visible.sync="roleOpen" width="520px" append-to-body>
-      <el-checkbox-group v-model="roleForm.roleIds">
-        <el-checkbox v-for="role in roleOptions" :key="role.roleId" :label="role.roleId">{{ role.roleName }}</el-checkbox>
-      </el-checkbox-group>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitRoles">确 定</el-button>
-        <el-button @click="roleOpen = false">取 消</el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listHospitalUser, getHospitalUser, addHospitalUser, updateHospitalUser, delHospitalUser, assignHospitalUserRoles } from '@/api/medical/hospitalUser'
+import { listHospitalUser, getHospitalUser, addHospitalUser, updateHospitalUser, delHospitalUser } from '@/api/medical/hospitalUser'
 import { listHospitalRole } from '@/api/medical/hospitalRole'
 import { listHospitalDept } from '@/api/medical/hospitalDept'
 import { hospitalPostOptions } from '@/api/medical/hospitalPost'
@@ -121,17 +125,17 @@ export default {
       postOptions: [],
       postLoading: false,
       open: false,
-      roleOpen: false,
       title: '',
-      queryParams: { pageNum: 1, pageSize: 10, nickName: undefined, status: undefined },
+      queryParams: { pageNum: 1, pageSize: 10, nickName: undefined, deptId: undefined, postId: undefined, status: undefined },
       form: {},
-      roleForm: { hospitalUserId: undefined, roleIds: [] },
       rules: {
         nickName: [{ required: true, message: '用户名称不能为空', trigger: 'blur' }],
+        phonenumber: [{ required: true, message: '手机号码不能为空', trigger: 'blur' }],
         password: [{ required: true, message: '登录密码不能为空', trigger: 'blur' }],
         roleIds: [{ required: true, type: 'array', message: '用户角色不能为空', trigger: 'change' }],
         deptId: [{ required: true, message: '用户部门不能为空', trigger: 'change' }],
-        postId: [{ required: true, message: '用户岗位不能为空', trigger: 'change' }]
+        postId: [{ required: true, message: '用户岗位不能为空', trigger: 'change' }],
+        status: [{ required: true, message: '用户状态不能为空', trigger: 'change' }]
       }
     }
   },
@@ -159,7 +163,7 @@ export default {
       this.handleQuery()
     },
     reset() {
-      this.form = { nickName: undefined, phonenumber: undefined, email: undefined, password: undefined, roleIds: [], deptId: undefined, postId: undefined }
+      this.form = { nickName: undefined, phonenumber: undefined, password: undefined, roleIds: [], deptId: undefined, postId: undefined, status: '0' }
     },
     remotePosts(query) {
       this.postLoading = true
@@ -175,7 +179,7 @@ export default {
     },
     handleUpdate(row) {
       getHospitalUser(row.hospitalUserId).then(response => {
-        this.form = response.data
+        this.form = Object.assign({ roleIds: [], status: '0' }, response.data)
         this.title = '修改医院用户'
         this.open = true
       })
@@ -185,29 +189,14 @@ export default {
         if (!valid) {
           return
         }
-        if (!this.form.hospitalUserId && !this.form.phonenumber && !this.form.email) {
-          this.$modal.msgError('手机号和邮箱至少填写一个')
-          return
-        }
-        const request = this.form.hospitalUserId ? updateHospitalUser(this.form) : addHospitalUser(this.form)
+        const data = Object.assign({}, this.form)
+        delete data.email
+        const request = data.hospitalUserId ? updateHospitalUser(data) : addHospitalUser(data)
         request.then(() => {
           this.$modal.msgSuccess('保存成功')
           this.open = false
           this.getList()
         })
-      })
-    },
-    handleRole(row) {
-      getHospitalUser(row.hospitalUserId).then(response => {
-        this.roleForm = { hospitalUserId: row.hospitalUserId, roleIds: response.data.roleIds || [] }
-        this.roleOpen = true
-      })
-    },
-    submitRoles() {
-      assignHospitalUserRoles(this.roleForm.hospitalUserId, this.roleForm).then(() => {
-        this.$modal.msgSuccess('授权成功')
-        this.roleOpen = false
-        this.getList()
       })
     },
     handleDelete(row) {
@@ -218,12 +207,27 @@ export default {
         this.$modal.msgSuccess('删除成功')
       }).catch(() => {})
     },
-    roleLevelName(roleLevel, isAdmin) {
-      if (isAdmin === '1') {
-        return '超级管理员'
+    formatRoleNames(row) {
+      if (Array.isArray(row.roleNames)) {
+        return row.roleNames.join('、') || '-'
       }
-      const map = { 0: '超级管理员', 10: '合伙人', 20: '管理员', 30: '员工' }
-      return map[roleLevel] || '成员'
+      if (row.roleNames) {
+        return row.roleNames
+      }
+      if (row.roleName) {
+        return row.roleName
+      }
+      if (Array.isArray(row.roles)) {
+        return row.roles.map(role => role.roleName).filter(Boolean).join('、') || '-'
+      }
+      if (Array.isArray(row.roleIds)) {
+        const roleNames = row.roleIds.map(roleId => {
+          const role = this.roleOptions.find(item => String(item.roleId) === String(roleId))
+          return role && role.roleName
+        }).filter(Boolean)
+        return roleNames.join('、') || '-'
+      }
+      return '-'
     },
     isOwner(row) {
       return row.isAdmin === '1' || row.roleLevel === 0
