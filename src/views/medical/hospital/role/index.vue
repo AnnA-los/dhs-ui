@@ -20,23 +20,20 @@
       <el-table-column label="层级" prop="roleLevel" min-width="110">
         <template slot-scope="scope">{{ roleLevelName(scope.row.roleLevel) }}</template>
       </el-table-column>
-      <el-table-column label="默认" prop="isDefault" width="80">
-        <template slot-scope="scope">{{ scope.row.isDefault === '1' ? '是' : '否' }}</template>
-      </el-table-column>
       <el-table-column label="状态" prop="status" width="90">
         <template slot-scope="scope">{{ scope.row.status === '0' ? '正常' : '停用' }}</template>
       </el-table-column>
       <el-table-column label="操作" align="center" width="150">
         <template slot-scope="scope">
           <el-button type="text" size="mini" @click="handleUpdate(scope.row)">修改</el-button>
-          <el-button type="text" size="mini" :disabled="scope.row.isDefault === '1'" @click="handleDelete(scope.row)">删除</el-button>
+          <el-button type="text" size="mini" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
     <pagination v-show="total > 0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList" />
     <el-dialog :title="title" :visible.sync="open" width="620px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="110px">
-        <el-form-item label="角色名称" prop="roleName"><el-input v-model="form.roleName" /></el-form-item>
+        <el-form-item label="角色名称" prop="roleName"><el-input v-model="form.roleName" :disabled="!!form.roleId" /></el-form-item>
         <el-form-item label="角色层级" prop="roleLevel">
           <el-select v-model="form.roleLevel" :disabled="!!form.roleId">
             <el-option label="合伙人" :value="10" />
