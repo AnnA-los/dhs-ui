@@ -27,7 +27,3 @@ export function updateHospitalUser(data) {
 export function delHospitalUser(hospitalUserId) {
   return request({ url: '/medical/hospital/user/' + hospitalUserId, method: 'delete' })
 }
-
-export function assignHospitalUserRoles(hospitalUserId, data) {
-  return request({ url: '/medical/hospital/user/' + hospitalUserId + '/roles', method: 'put', data: data })
-}
