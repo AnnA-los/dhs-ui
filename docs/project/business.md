@@ -187,6 +187,20 @@
 
 项目、耗材、加工定制分别通过各自 API 提供列表和 options，收费明细会消费这些 options。
 
+## 排班与营业时间
+
+排班页面：`src/views/medical/schedule/index.vue`。
+
+关键规则：
+
+- 排班列表保留员工、手机号、部门、岗位、排班日期、时间、排班类型、超营业时间标记等展示字段。
+- 员工下拉只展示姓名，提交 `hospitalUserId`；选择员工后手机号在独立只读字段中展示，不在下拉里拼接部门、岗位、角色或层级。
+- 新增/编辑排班使用日期范围，提交 `scheduleBeginDate` 和 `scheduleEndDate`，并兼容 `scheduleDate` 作为单日排班回显字段。
+- 排班类型沿用 `SHIFT`、`REST`、`ALL_DAY`，本次不新增早班、晚班等类型。
+- 营业时间通过排班页“营业时间”入口维护，字段包括 `openTime`、`closeTime`、`dateRule`、`weeklyRestDays`、`monthlyRestDays`。
+- 排班首次保存不带 `businessHoursConfirmed`；如果后端提示超出营业时间或休息规则，前端弹出二次确认，继续保存时重提并带 `businessHoursConfirmed=true`。
+- 公共日期范围快捷项包括最近一个月、三个月、半年、一年；排班范围超过一年时前端阻止提交，后端仍应兜底。
+
 ## 类型管理
 
 通用类型接口：`src/api/medical/type.js`。

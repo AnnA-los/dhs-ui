@@ -18,7 +18,7 @@ import './assets/icons' // icon
 import './permission' // permission control
 import { getDicts } from "@/api/system/dict/data"
 import { getConfigKey } from "@/api/system/config"
-import { parseTime, resetForm, addDateRange, getCurrentMonthRange, getCurrentMonthTimeRange, restoreCurrentMonthRange, selectDictLabel, selectDictLabels, handleTree } from "@/utils/dhs-ui"
+import { parseTime, resetForm, addDateRange, getCurrentMonthRange, getCurrentMonthTimeRange, getRecentMonthRange, getCommonDateRangePickerOptions, restoreCurrentMonthRange, selectDictLabel, selectDictLabels, handleTree } from "@/utils/dhs-ui"
 // 分页组件
 import Pagination from "@/components/Pagination"
 // 自定义表格工具组件
@@ -44,6 +44,8 @@ Vue.prototype.resetForm = resetForm
 Vue.prototype.addDateRange = addDateRange
 Vue.prototype.getCurrentMonthRange = getCurrentMonthRange
 Vue.prototype.getCurrentMonthTimeRange = getCurrentMonthTimeRange
+Vue.prototype.getRecentMonthRange = getRecentMonthRange
+Vue.prototype.getCommonDateRangePickerOptions = getCommonDateRangePickerOptions
 Vue.prototype.restoreCurrentMonthRange = restoreCurrentMonthRange
 Vue.prototype.selectDictLabel = selectDictLabel
 Vue.prototype.selectDictLabels = selectDictLabels
