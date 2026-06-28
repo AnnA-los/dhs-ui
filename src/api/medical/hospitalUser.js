@@ -8,6 +8,10 @@ export function hospitalUserOptions(query) {
   return request({ url: '/medical/hospital/user/options', method: 'get', params: query })
 }
 
+export function scheduleUserOptions(query) {
+  return request({ url: '/medical/hospital/user/scheduleOptions', method: 'get', params: query })
+}
+
 export function doctorOptions(query) {
   return request({ url: '/medical/hospital/user/doctorOptions', method: 'get', params: query })
 }

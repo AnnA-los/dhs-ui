@@ -31,19 +31,19 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5"><el-button v-hasPermi="['medical:schedule:add']" type="primary" plain icon="el-icon-plus" size="mini" @click="handleAdd">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button v-hasPermi="['medical:schedule:businessHours']" type="info" plain icon="el-icon-time" size="mini" @click="handleBusinessHours">营业时间</el-button></el-col>
+      <el-col :span="1.5"><el-button v-hasPermi="['medical:schedule:businessHours:query', 'medical:schedule:add', 'medical:schedule:edit']" type="info" plain icon="el-icon-time" size="mini" @click="handleBusinessHours">营业时间</el-button></el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="scheduleList" :height="tableHeight" border fit>
       <el-table-column label="员工" prop="hospitalUserName" min-width="120" show-overflow-tooltip />
       <el-table-column label="手机号" prop="phonenumber" min-width="130" show-overflow-tooltip>
-        <template slot-scope="scope">{{ scope.row.phonenumber || scope.row.phoneNumber || '-' }}</template>
+        <template slot-scope="scope">{{ schedulePhone(scope.row) }}</template>
       </el-table-column>
       <el-table-column label="部门" prop="deptName" min-width="120" show-overflow-tooltip />
       <el-table-column label="岗位" prop="postName" min-width="110" show-overflow-tooltip />
       <el-table-column label="排班日期" prop="scheduleDate" min-width="120">
-        <template slot-scope="scope">{{ parseTime(scope.row.scheduleDate, '{y}-{m}-{d}') }}</template>
+        <template slot-scope="scope">{{ scope.row.workType === 'BUSINESS_PERIOD' ? '长期有效' : parseTime(scope.row.scheduleDate, '{y}-{m}-{d}') }}</template>
       </el-table-column>
       <el-table-column label="排班类型" prop="workType" min-width="100">
         <template slot-scope="scope"><el-tag :type="workTypeTag(scope.row.workType)">{{ workTypeName(scope.row.workType) }}</el-tag></template>
@@ -77,7 +77,7 @@
         <el-row :gutter="12">
           <el-col :span="12">
             <el-form-item label="员工" prop="hospitalUserId">
-              <el-select v-model="form.hospitalUserId" filterable remote clearable placeholder="请选择医生或护士" :remote-method="remoteUsers" :loading="userLoading" style="width: 100%" @change="handleUserChange">
+              <el-select v-model="form.hospitalUserId" filterable remote clearable placeholder="请选择员工" :remote-method="remoteUsers" :loading="userLoading" style="width: 100%" @change="handleUserChange">
                 <el-option v-for="item in userOptions" :key="item.hospitalUserId" :label="userName(item)" :value="item.hospitalUserId" />
               </el-select>
             </el-form-item>
@@ -88,7 +88,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="排班日期" prop="scheduleDateRange">
+        <el-form-item v-if="form.workType !== 'BUSINESS_PERIOD'" label="排班日期" prop="scheduleDateRange">
           <el-date-picker
             v-model="form.scheduleDateRange"
             type="daterange"
@@ -106,6 +106,7 @@
             <el-radio-button label="SHIFT">有排班</el-radio-button>
             <el-radio-button label="REST">休息</el-radio-button>
             <el-radio-button label="ALL_DAY">全天在岗</el-radio-button>
+            <el-radio-button label="BUSINESS_PERIOD">营业期间在岗</el-radio-button>
           </el-radio-group>
         </el-form-item>
         <el-row v-if="form.workType === 'SHIFT'" :gutter="12">
@@ -187,7 +188,7 @@
 
 <script>
 import { listSchedule, getSchedule, addSchedule, updateSchedule, delSchedule, getScheduleBusinessHours, saveScheduleBusinessHours } from '@/api/medical/schedule'
-import { hospitalUserOptions } from '@/api/medical/hospitalUser'
+import { scheduleUserOptions } from '@/api/medical/hospitalUser'
 import medicalTableHeight from '@/views/medical/mixins/tableHeight'
 
 export default {
@@ -216,7 +217,8 @@ export default {
       workTypeOptions: [
         { label: '有排班', value: 'SHIFT' },
         { label: '休息', value: 'REST' },
-        { label: '全天在岗', value: 'ALL_DAY' }
+        { label: '全天在岗', value: 'ALL_DAY' },
+        { label: '营业期间在岗', value: 'BUSINESS_PERIOD' }
       ],
       dateRuleOptions: [
         { label: '全年营业', value: 'ALL_YEAR' },
@@ -236,7 +238,6 @@ export default {
       monthDayOptions: Array.from({ length: 31 }, (_, index) => index + 1),
       rules: {
         hospitalUserId: [{ required: true, message: '员工不能为空', trigger: 'change' }],
-        scheduleDateRange: [{ required: true, type: 'array', message: '排班日期不能为空', trigger: 'change' }],
         workType: [{ required: true, message: '排班类型不能为空', trigger: 'change' }],
         startTime: [{ required: true, message: '开始时间不能为空', trigger: 'change' }],
         endTime: [{ required: true, message: '结束时间不能为空', trigger: 'change' }]
@@ -269,7 +270,7 @@ export default {
     },
     remoteUsers(query) {
       this.userLoading = true
-      hospitalUserOptions({ nickName: query }).then(response => {
+      scheduleUserOptions({ nickName: query }).then(response => {
         this.userOptions = this.mergeUserOptions(response.data || response.rows || [])
         this.userLoading = false
       }).catch(() => {
@@ -330,7 +331,7 @@ export default {
             data.scheduleBeginDate || scheduleDate,
             data.scheduleEndDate || scheduleDate
           ],
-          phonenumber: data.phonenumber || data.phoneNumber || row.phonenumber || row.phoneNumber
+          phonenumber: this.resolveSchedulePhone(data) || this.resolveSchedulePhone(row)
         })
         this.userOptions = this.mergeUserOptions([])
         this.title = '修改排班'
@@ -356,7 +357,7 @@ export default {
     },
     handleUserChange(value) {
       const user = this.userOptions.find(item => item.hospitalUserId === value)
-      this.form.phonenumber = user ? (user.phonenumber || user.phoneNumber) : undefined
+      this.form.phonenumber = user ? this.resolveSchedulePhone(user) : undefined
     },
     handleWorkTypeChange(value) {
       if (value !== 'SHIFT') {
@@ -364,6 +365,9 @@ export default {
         this.form.endTime = undefined
         this.form.appointmentInterval = undefined
         this.form.maxAppointments = undefined
+        if (value === 'BUSINESS_PERIOD') {
+          this.form.scheduleDateRange = undefined
+        }
       } else {
         this.form.appointmentInterval = this.form.appointmentInterval || 30
         this.form.maxAppointments = this.form.maxAppointments || 1
@@ -430,6 +434,10 @@ export default {
         this.$modal.msgError('排班日期范围不能超过一年')
         return false
       }
+      if (this.form.workType !== 'BUSINESS_PERIOD' && (!Array.isArray(this.form.scheduleDateRange) || this.form.scheduleDateRange.length !== 2)) {
+        this.$modal.msgError('排班日期不能为空')
+        return false
+      }
       if (this.form.workType === 'SHIFT' && this.form.startTime >= this.form.endTime) {
         this.$modal.msgError('开始时间必须早于结束时间')
         return false
@@ -439,9 +447,9 @@ export default {
     buildSchedulePayload(businessHoursConfirmed) {
       const dateRange = this.form.scheduleDateRange || []
       const data = Object.assign({}, this.form, {
-        scheduleBeginDate: dateRange[0],
-        scheduleEndDate: dateRange[1],
-        scheduleDate: dateRange[0]
+        scheduleBeginDate: this.form.workType === 'BUSINESS_PERIOD' ? undefined : dateRange[0],
+        scheduleEndDate: this.form.workType === 'BUSINESS_PERIOD' ? undefined : dateRange[1],
+        scheduleDate: this.form.workType === 'BUSINESS_PERIOD' ? undefined : dateRange[0]
       })
       if (businessHoursConfirmed) {
         data.businessHoursConfirmed = true
@@ -483,7 +491,7 @@ export default {
       return {
         hospitalUserId: this.form.hospitalUserId,
         nickName: this.form.hospitalUserName,
-        phonenumber: this.form.phonenumber || this.form.phoneNumber
+        phonenumber: this.form.phonenumber || this.form.phoneNumber || this.form.hospitalUserPhone
       }
     },
     mergeUserOptions(options) {
@@ -508,13 +516,19 @@ export default {
       return String(value).slice(0, 5)
     },
     workTypeName(type) {
-      return { SHIFT: '有排班', REST: '休息', ALL_DAY: '全天在岗' }[type] || type
+      return { SHIFT: '有排班', REST: '休息', ALL_DAY: '全天在岗', BUSINESS_PERIOD: '营业期间在岗' }[type] || type
     },
     workTypeTag(type) {
-      return { SHIFT: 'success', REST: 'info', ALL_DAY: 'primary' }[type] || ''
+      return { SHIFT: 'success', REST: 'info', ALL_DAY: 'primary', BUSINESS_PERIOD: 'warning' }[type] || ''
     },
     userName(item) {
       return item.nickName || item.userName || item.hospitalUserName || '-'
+    },
+    schedulePhone(item) {
+      return this.resolveSchedulePhone(item) || '-'
+    },
+    resolveSchedulePhone(item) {
+      return item && (item.hospitalUserPhone || item.phonenumber || item.phoneNumber)
     }
   }
 }

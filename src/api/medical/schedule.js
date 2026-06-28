@@ -21,12 +21,12 @@ export function delSchedule(scheduleId) {
 }
 
 export function getScheduleBusinessHours() {
-  return request({ url: '/medical/hospital/businessHours/current', method: 'get' })
+  return request({ url: '/medical/schedule/business-hours/current', method: 'get' })
 }
 
 export function saveScheduleBusinessHours(data) {
   return request({
-    url: '/medical/hospital/businessHours',
+    url: '/medical/schedule/business-hours',
     method: data && data.businessHoursId ? 'put' : 'post',
     data: data
   })

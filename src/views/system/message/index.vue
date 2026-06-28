@@ -22,7 +22,7 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="el-icon-plus" size="mini" @click="handleAdd" v-hasPermi="['medical:system:message:send']">新增消息</el-button>
+        <el-button type="primary" plain icon="el-icon-plus" size="mini" @click="handleAdd" v-hasPermi="['system:message:send']">新增消息</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -89,11 +89,11 @@
 </template>
 
 <script>
-import { listSystemMessage, dispatchSystemMessage } from '@/api/medical/systemMessage'
+import { listSystemMessage, dispatchSystemMessage } from '@/api/system/message'
 import medicalTableHeight from '@/views/medical/mixins/tableHeight'
 
 export default {
-  name: 'MedicalSystemMessage',
+  name: 'SystemMessage',
   mixins: [medicalTableHeight],
   data() {
     return {

@@ -3,7 +3,7 @@
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch">
       <el-form-item label="部门" prop="deptId">
         <el-select v-model="queryParams.deptId" filterable clearable placeholder="请选择部门">
-          <el-option v-for="item in deptOptions" :key="item.deptId" :label="item.deptName" :value="item.deptId" />
+          <el-option v-for="item in deptOptions" :key="item.deptId" :label="item.deptOptionName" :value="item.deptId" />
         </el-select>
       </el-form-item>
       <el-form-item label="项目名称" prop="projectName">
@@ -52,7 +52,7 @@
       <el-form ref="form" :model="form" :rules="rules" label-width="90px">
         <el-form-item label="部门" prop="deptId">
           <el-select v-model="form.deptId" filterable placeholder="请选择部门" style="width: 100%">
-            <el-option v-for="item in deptOptions" :key="item.deptId" :label="item.deptName" :value="item.deptId" />
+            <el-option v-for="item in deptOptions" :key="item.deptId" :label="item.deptOptionName" :value="item.deptId" />
           </el-select>
         </el-form-item>
         <el-form-item label="项目名称" prop="projectName"><el-input v-model="form.projectName" /></el-form-item>
@@ -73,6 +73,7 @@
 import { listProject, getProject, addProject, updateProject, delProject } from '@/api/medical/project'
 import { listHospitalDept } from '@/api/medical/hospitalDept'
 import { medicalTypeOptions } from '@/api/medical/type'
+import { flattenHospitalDeptOptions } from '@/utils/medicalDept'
 import medicalTableHeight from '@/views/medical/mixins/tableHeight'
 import TypeManageDialog from '@/views/medical/components/TypeManageDialog'
 export default {
@@ -85,7 +86,7 @@ export default {
   created() { this.getList(); this.loadDepts(); this.loadTypes() },
   methods: {
     getList() { this.loading = true; listProject(this.queryParams).then(r => { this.projectList = r.rows; this.total = r.total; this.loading = false }) },
-    loadDepts() { listHospitalDept().then(r => { this.deptOptions = r.data || r.rows || [] }) },
+    loadDepts() { listHospitalDept().then(r => { this.deptOptions = flattenHospitalDeptOptions(r.data || r.rows || []) }) },
     loadTypes() { medicalTypeOptions({ typeCategory: 'PROJECT' }).then(r => { this.typeOptions = r.data || [] }) },
     handleQuery() { this.queryParams.pageNum = 1; this.getList() },
     resetQuery() { this.resetForm('queryForm'); this.handleQuery() },

@@ -1,12 +1,13 @@
 import request from '@/utils/request'
 
 // 登录方法
-export function login(username, password, code, uuid) {
+export function login(username, password, code, uuid, smsCode) {
   const data = {
     username,
     password,
     code,
-    uuid
+    uuid,
+    smsCode
   }
   return request({
     url: '/login',
@@ -16,6 +17,19 @@ export function login(username, password, code, uuid) {
     },
     method: 'post',
     data: data
+  })
+}
+
+// 发送手机验证码
+export function sendSmsCode(username) {
+  return request({
+    url: '/smsCode',
+    headers: {
+      isToken: false,
+      repeatSubmit: false
+    },
+    method: 'post',
+    data: { username }
   })
 }
 

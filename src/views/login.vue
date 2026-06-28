@@ -31,6 +31,21 @@
           <svg-icon slot="prefix" icon-class="password" class="el-input__icon input-icon" />
         </el-input>
       </el-form-item>
+      <el-form-item prop="smsCode">
+        <div class="sms-code-row">
+          <el-input
+            v-model="loginForm.smsCode"
+            auto-complete="off"
+            placeholder="手机验证码"
+            @keyup.enter.native="handleLogin"
+          >
+            <svg-icon slot="prefix" icon-class="validCode" class="el-input__icon input-icon" />
+          </el-input>
+          <el-button class="sms-code-btn" :disabled="smsCountdown > 0" @click="handleSendSmsCode">
+            {{ smsCountdown > 0 ? smsCountdown + 's' : '发送验证码' }}
+          </el-button>
+        </div>
+      </el-form-item>
       <el-form-item prop="code" v-if="captchaEnabled">
         <el-input
           v-model="loginForm.code"
@@ -88,7 +103,7 @@
 </template>
 
 <script>
-import { getCodeImg } from '@/api/login'
+import { getCodeImg, sendSmsCode } from '@/api/login'
 import { listLoginHospitals, selectLoginHospital } from '@/api/medical/hospital'
 import { setToken, removeToken } from '@/utils/auth'
 import Cookies from 'js-cookie'
@@ -108,17 +123,22 @@ export default {
         username: '',
         password: '',
         rememberMe: false,
+        smsCode: '',
         code: '',
         uuid: ''
       },
       loginRules: {
         username: [{ required: true, trigger: 'blur', message: '请输入手机号' }],
         password: [{ required: true, trigger: 'blur', message: '请输入您的密码' }],
+        smsCode: [{ validator: (rule, value, callback) => this.validateSmsCode(value, callback), trigger: 'blur' }],
         code: [{ required: true, trigger: 'change', message: '请输入验证码' }]
       },
       loading: false,
       captchaEnabled: true,
+      smsRealSendEnabled: true,
       register: true,
+      smsCountdown: 0,
+      smsTimer: null,
       redirect: undefined,
       hospitalDialogOpen: false,
       loginHospitals: [],
@@ -137,10 +157,46 @@ export default {
     this.getCode()
     this.getCookie()
   },
+  beforeDestroy() {
+    if (this.smsTimer) {
+      window.clearInterval(this.smsTimer)
+    }
+  },
   methods: {
+    handleSendSmsCode() {
+      if (!/^1[3-9]\d{9}$/.test(this.loginForm.username || '')) {
+        this.$modal.msgError('请先输入正确的手机号')
+        return
+      }
+      sendSmsCode(this.loginForm.username).then(() => {
+        this.$modal.msgSuccess(this.smsRealSendEnabled ? '验证码已发送' : '短信真实发送已关闭，已跳过发送')
+        this.startSmsCountdown()
+      })
+    },
+    validateSmsCode(value, callback) {
+      if (this.smsRealSendEnabled && !value) {
+        callback(new Error('请输入手机验证码'))
+        return
+      }
+      callback()
+    },
+    startSmsCountdown() {
+      this.smsCountdown = 60
+      if (this.smsTimer) {
+        window.clearInterval(this.smsTimer)
+      }
+      this.smsTimer = window.setInterval(() => {
+        this.smsCountdown -= 1
+        if (this.smsCountdown <= 0) {
+          window.clearInterval(this.smsTimer)
+          this.smsTimer = null
+        }
+      }, 1000)
+    },
     getCode() {
       getCodeImg().then(res => {
         this.captchaEnabled = res.captchaEnabled === undefined ? true : res.captchaEnabled
+        this.smsRealSendEnabled = res.smsRealSendEnabled === undefined ? true : res.smsRealSendEnabled
         if (this.captchaEnabled) {
           this.codeUrl = 'data:image/gif;base64,' + res.img
           this.loginForm.uuid = res.uuid
@@ -302,6 +358,17 @@ export default {
 }
 .login-code-img {
   height: 38px;
+}
+
+.sms-code-row {
+  display: grid;
+  grid-template-columns: 1fr 112px;
+  gap: 10px;
+}
+
+.sms-code-btn {
+  height: 38px;
+  padding: 0 10px;
 }
 
 ::v-deep .login-hospital-dialog {

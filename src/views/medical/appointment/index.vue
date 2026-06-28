@@ -91,7 +91,7 @@
           <el-col :span="12">
             <el-form-item label="预约部门" prop="deptId">
               <el-select v-model="form.deptId" filterable clearable placeholder="请选择预约部门" style="width: 100%" @change="handleDeptChange">
-                <el-option v-for="item in deptOptions" :key="item.deptId" :label="item.deptName" :value="item.deptId" />
+                <el-option v-for="item in deptOptions" :key="item.deptId" :label="item.deptOptionName" :value="item.deptId" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -166,6 +166,7 @@ import { patientOptions as queryPatients } from '@/api/medical/patient'
 import { doctorOptions as queryDoctors } from '@/api/medical/hospitalUser'
 import { hospitalDeptOptions } from '@/api/medical/hospitalDept'
 import { medicalTypeOptions } from '@/api/medical/type'
+import { flattenHospitalDeptOptions } from '@/utils/medicalDept'
 import medicalTableHeight from '@/views/medical/mixins/tableHeight'
 import TypeManageDialog from '@/views/medical/components/TypeManageDialog'
 
@@ -256,7 +257,7 @@ export default {
     },
     loadDepts() {
       hospitalDeptOptions().then(response => {
-        this.deptOptions = response.data || response.rows || []
+        this.deptOptions = flattenHospitalDeptOptions(response.data || response.rows || [])
       })
     },
     loadTypes() {

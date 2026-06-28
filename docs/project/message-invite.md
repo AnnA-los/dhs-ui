@@ -4,28 +4,28 @@
 
 2026-06-27 任务 5 前端开发覆盖：
 
-- 系统消息发送页面：`src/views/medical/systemMessage/index.vue`
+- 系统消息发送页面：`src/views/system/message/index.vue`
 - 邀请审核页面：`src/views/medical/hospital/inviteAudit/index.vue`
 - 顶部消息入口：`src/layout/components/Navbar.vue`
-- API 封装：`src/api/medical/systemMessage.js`、`src/api/medical/hospitalInviteApply.js`
+- API 封装：`src/api/system/message.js`、`src/api/medical/hospitalInviteApply.js`
 
 对应后端需求主分支：`codex/medical-requirements-20260627`。任务分支约定：`codex/medical-requirements-20260627-message-invite`。
 
 ## 前端入口与菜单
 
-业务菜单由后端 `/getRouters` 下发，新增菜单时后端 `component` 应分别指向：
+菜单由后端 `/getRouters` 下发，新增菜单时后端 `component` 应分别指向：
 
-- 系统消息发送：`medical/systemMessage/index`
+- 系统消息发送：`system/message/index`，属于系统后台“系统管理”，不属于医院业务“业务管理”
 - 邀请审核：`medical/hospital/inviteAudit/index`
 
-页面组件 `name` 分别为 `MedicalSystemMessage` 和 `MedicalHospitalInviteAudit`，避免 tagsView/keep-alive 名称冲突。
+页面组件 `name` 分别为 `SystemMessage` 和 `MedicalHospitalInviteAudit`，避免 tagsView/keep-alive 名称冲突。
 
 ## API 约定
 
 系统消息：
 
-- `GET /medical/system/message/list`
-- `POST /medical/system/message/dispatch`
+- `GET /system/message/list`
+- `POST /system/message/dispatch`
 
 邀请审核：
 
@@ -42,6 +42,7 @@
 - 邀请审核状态：`PENDING`、`APPROVED`、`REJECTED`。
 - 邀请审核通过弹窗提交 `roleIds`、`deptId`、`postId`；拒绝弹窗提交 `rejectReason`。
 - 申请人、邀请人、审核人字段均以后端稳定 ID 保存，前端只展示后端关联出的名称。
+- 邀请审核列表不展示部门、岗位、角色；这些字段只在审核通过弹窗中选择。审核通过和审核拒绝列表需要展示审核人和审核时间，审核拒绝列表额外展示拒绝原因。
 
 ## 特殊处理
 
@@ -52,6 +53,6 @@
 
 ## 后续联调注意
 
-- 若后端最终接口路径调整，优先只改 `src/api/medical/systemMessage.js` 和 `src/api/medical/hospitalInviteApply.js`。
+- 若后端最终接口路径调整，优先只改 `src/api/system/message.js` 和 `src/api/medical/hospitalInviteApply.js`。
 - 系统消息按后端已实现能力收敛为“创建并发送”，不在前端保留草稿和重发入口。
-- 按钮权限当前使用 `medical:system:message:send`、`medical:hospital:invite:audit`，后端菜单权限需要保持一致。
+- 按钮权限当前使用 `system:message:send`、`medical:hospital:invite:audit`，后端菜单权限需要保持一致。

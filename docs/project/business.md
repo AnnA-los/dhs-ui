@@ -210,7 +210,7 @@
 关键规则：
 
 - 排班列表保留员工、手机号、部门、岗位、排班日期、时间、排班类型、超营业时间标记等展示字段。
-- 员工下拉只展示姓名，提交 `hospitalUserId`；选择员工后手机号在独立只读字段中展示，不在下拉里拼接部门、岗位、角色或层级。
+- 员工下拉调用 `/medical/hospital/user/scheduleOptions`，只展示当前医院全部正常员工的姓名，提交 `hospitalUserId`；选择员工后手机号在独立只读字段中展示，不在下拉里拼接部门、岗位、角色或层级，不复用医院用户管理的层级过滤 options。
 - 新增/编辑排班使用日期范围，提交 `scheduleBeginDate` 和 `scheduleEndDate`，并兼容 `scheduleDate` 作为单日排班回显字段。
 - 排班类型沿用 `SHIFT`、`REST`、`ALL_DAY`，本次不新增早班、晚班等类型。
 - 营业时间通过排班页“营业时间”入口维护，字段包括 `openTime`、`closeTime`、`dateRule`、`weeklyRestDays`、`monthlyRestDays`。

@@ -5,8 +5,8 @@
         <el-input v-model="queryParams.nickName" placeholder="姓名/手机号" clearable @keyup.enter.native="handleQuery" />
       </el-form-item>
       <el-form-item label="部门" prop="deptId">
-        <el-select v-model="queryParams.deptId" placeholder="请选择部门" clearable>
-          <el-option v-for="dept in deptOptions" :key="dept.deptId" :label="dept.deptName" :value="dept.deptId" />
+        <el-select v-model="queryParams.deptId" filterable placeholder="请选择部门" clearable>
+          <el-option v-for="dept in deptOptions" :key="dept.deptId" :label="dept.deptOptionName" :value="dept.deptId" />
         </el-select>
       </el-form-item>
       <el-form-item label="岗位" prop="postId">
@@ -80,8 +80,8 @@
           </el-select>
         </el-form-item>
         <el-form-item label="用户部门" prop="deptId">
-          <el-select v-model="form.deptId" placeholder="请选择部门" clearable style="width: 100%">
-            <el-option v-for="dept in deptOptions" :key="dept.deptId" :label="dept.deptName" :value="dept.deptId" />
+          <el-select v-model="form.deptId" filterable placeholder="请选择部门" clearable style="width: 100%">
+            <el-option v-for="dept in deptOptions" :key="dept.deptId" :label="dept.deptOptionName" :value="dept.deptId" />
           </el-select>
         </el-form-item>
         <el-form-item label="用户岗位" prop="postId">
@@ -109,6 +109,7 @@ import { listHospitalUser, getHospitalUser, addHospitalUser, updateHospitalUser,
 import { listHospitalRole } from '@/api/medical/hospitalRole'
 import { listHospitalDept } from '@/api/medical/hospitalDept'
 import { hospitalPostOptions } from '@/api/medical/hospitalPost'
+import { flattenHospitalDeptOptions } from '@/utils/medicalDept'
 import medicalTableHeight from '@/views/medical/mixins/tableHeight'
 
 export default {
@@ -142,7 +143,7 @@ export default {
   created() {
     this.getList()
     listHospitalRole({ pageNum: 1, pageSize: 100 }).then(response => { this.roleOptions = response.rows || [] })
-    listHospitalDept().then(response => { this.deptOptions = response.data || response.rows || [] })
+    listHospitalDept().then(response => { this.deptOptions = flattenHospitalDeptOptions(response.data || response.rows || []) })
     this.remotePosts('')
   },
   methods: {

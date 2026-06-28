@@ -32,15 +32,6 @@
         <template slot-scope="scope">{{ scope.row.inviterUserName || '-' }}</template>
       </el-table-column>
       <el-table-column label="邀请码" prop="inviteCode" min-width="120" show-overflow-tooltip />
-      <el-table-column label="部门" prop="deptName" min-width="120" show-overflow-tooltip>
-        <template slot-scope="scope">{{ scope.row.deptName || '-' }}</template>
-      </el-table-column>
-      <el-table-column label="岗位" prop="postName" min-width="120" show-overflow-tooltip>
-        <template slot-scope="scope">{{ scope.row.postName || '-' }}</template>
-      </el-table-column>
-      <el-table-column label="角色" prop="roleNames" min-width="150" show-overflow-tooltip>
-        <template slot-scope="scope">{{ scope.row.roleNames || '-' }}</template>
-      </el-table-column>
       <el-table-column label="状态" prop="auditStatus" width="100">
         <template slot-scope="scope">
           <el-tag :type="auditStatusTag(scope.row.auditStatus)" size="mini">{{ auditStatusName(scope.row.auditStatus) }}</el-tag>
@@ -48,6 +39,9 @@
       </el-table-column>
       <el-table-column label="申请时间" prop="createTime" width="170">
         <template slot-scope="scope">{{ parseTime(scope.row.createTime) }}</template>
+      </el-table-column>
+      <el-table-column v-if="activeStatus !== 'PENDING'" label="审核人" prop="auditUserName" min-width="130" show-overflow-tooltip>
+        <template slot-scope="scope">{{ scope.row.auditUserName || '-' }}</template>
       </el-table-column>
       <el-table-column v-if="activeStatus !== 'PENDING'" label="审核时间" prop="auditTime" width="170">
         <template slot-scope="scope">{{ parseTime(scope.row.auditTime) || '-' }}</template>
@@ -73,8 +67,8 @@
           </el-select>
         </el-form-item>
         <el-form-item label="用户部门" prop="deptId">
-          <el-select v-model="approveForm.deptId" placeholder="请选择部门" clearable style="width: 100%">
-            <el-option v-for="dept in deptOptions" :key="dept.deptId" :label="dept.deptName" :value="dept.deptId" />
+          <el-select v-model="approveForm.deptId" filterable placeholder="请选择部门" clearable style="width: 100%">
+            <el-option v-for="dept in deptOptions" :key="dept.deptId" :label="dept.deptOptionName" :value="dept.deptId" />
           </el-select>
         </el-form-item>
         <el-form-item label="用户岗位" prop="postId">
@@ -111,6 +105,7 @@ import { listInviteApply, approveInviteApply, rejectInviteApply } from '@/api/me
 import { listHospitalRole } from '@/api/medical/hospitalRole'
 import { listHospitalDept } from '@/api/medical/hospitalDept'
 import { hospitalPostOptions } from '@/api/medical/hospitalPost'
+import { flattenHospitalDeptOptions } from '@/utils/medicalDept'
 import medicalTableHeight from '@/views/medical/mixins/tableHeight'
 
 export default {
@@ -167,7 +162,7 @@ export default {
         this.roleOptions = response.rows || response.data || []
       })
       listHospitalDept().then(response => {
-        this.deptOptions = response.data || response.rows || []
+        this.deptOptions = flattenHospitalDeptOptions(response.data || response.rows || [])
       })
       this.remotePosts('')
     },

@@ -93,8 +93,8 @@ export default {
     getList() {
       this.loading = true
       listHospitalDept().then(response => {
-        this.deptList = response.data || response.rows || []
-        this.deptTree = this.buildDeptTree(this.deptList)
+        this.deptTree = response.data || response.rows || []
+        this.deptList = this.flattenDeptTree(this.deptTree)
         this.deptOptions = this.buildDeptTree(this.deptList)
         this.loading = false
       })
@@ -179,6 +179,21 @@ export default {
       })
       this.assignDeptLevel(roots, 1)
       return roots
+    },
+    flattenDeptTree(tree) {
+      const list = []
+      const walk = nodes => {
+        ;(nodes || []).forEach(node => {
+          const copy = Object.assign({}, node)
+          delete copy.children
+          list.push(copy)
+          if (node.children && node.children.length) {
+            walk(node.children)
+          }
+        })
+      }
+      walk(tree)
+      return list
     },
     assignDeptLevel(nodes, level) {
       nodes.forEach(node => {

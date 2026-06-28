@@ -7,6 +7,16 @@
           <svg-icon slot="prefix" icon-class="phone" class="el-input__icon input-icon" />
         </el-input>
       </el-form-item>
+      <el-form-item prop="smsCode">
+        <div class="sms-code-row">
+          <el-input v-model="registerForm.smsCode" auto-complete="off" placeholder="手机验证码">
+            <svg-icon slot="prefix" icon-class="validCode" class="el-input__icon input-icon" />
+          </el-input>
+          <el-button class="sms-code-btn" :disabled="smsCountdown > 0" @click="handleSendSmsCode">
+            {{ smsCountdown > 0 ? smsCountdown + 's' : '发送验证码' }}
+          </el-button>
+        </div>
+      </el-form-item>
       <el-form-item prop="inviteCode">
         <el-input v-model="registerForm.inviteCode" name="register_invite_code" type="text" autocomplete="off" auto-complete="off" placeholder="邀请码，可选">
           <svg-icon slot="prefix" icon-class="validCode" class="el-input__icon input-icon" />
@@ -71,7 +81,7 @@
 </template>
 
 <script>
-import { getCodeImg, register } from '@/api/login'
+import { getCodeImg, register, sendSmsCode } from '@/api/login'
 import defaultSettings from '@/settings'
 
 export default {
@@ -88,6 +98,7 @@ export default {
         hospitalType: '',
         inviteCode: '',
         password: '',
+        smsCode: '',
         code: '',
         uuid: ''
       },
@@ -102,17 +113,56 @@ export default {
           { min: 5, max: 20, message: '用户密码长度必须介于 5 和 20 之间', trigger: 'blur' },
           { pattern: /^[^<>"'|\\]+$/, message: '不能包含非法字符：< > " \' \\\\ |', trigger: 'blur' }
         ],
+        smsCode: [{ validator: (rule, value, callback) => this.validateSmsCode(value, callback), trigger: 'blur' }],
         code: [{ required: true, trigger: 'change', message: '请输入验证码' }]
       },
       loading: false,
-      captchaEnabled: true
+      captchaEnabled: true,
+      smsRealSendEnabled: true,
+      smsCountdown: 0,
+      smsTimer: null
     }
   },
   created() {
     this.getCode()
     this.clearAutofillFields()
   },
+  beforeDestroy() {
+    if (this.smsTimer) {
+      window.clearInterval(this.smsTimer)
+    }
+  },
   methods: {
+    handleSendSmsCode() {
+      if (!/^1[3-9]\d{9}$/.test(this.registerForm.phonenumber || '')) {
+        this.$modal.msgError('请先输入正确的手机号')
+        return
+      }
+      sendSmsCode(this.registerForm.phonenumber).then(() => {
+        this.$modal.msgSuccess(this.smsRealSendEnabled ? '验证码已发送' : '短信真实发送已关闭，已跳过发送')
+        this.startSmsCountdown()
+      })
+    },
+    validateSmsCode(value, callback) {
+      if (this.smsRealSendEnabled && !value) {
+        callback(new Error('请输入手机验证码'))
+        return
+      }
+      callback()
+    },
+    startSmsCountdown() {
+      this.smsCountdown = 60
+      if (this.smsTimer) {
+        window.clearInterval(this.smsTimer)
+      }
+      this.smsTimer = window.setInterval(() => {
+        this.smsCountdown -= 1
+        if (this.smsCountdown <= 0) {
+          window.clearInterval(this.smsTimer)
+          this.smsTimer = null
+        }
+      }, 1000)
+    },
     clearAutofillFields() {
       this.$nextTick(() => {
         this.registerForm.inviteCode = ''
@@ -126,6 +176,7 @@ export default {
     getCode() {
       getCodeImg().then(res => {
         this.captchaEnabled = res.captchaEnabled === undefined ? true : res.captchaEnabled
+        this.smsRealSendEnabled = res.smsRealSendEnabled === undefined ? true : res.smsRealSendEnabled
         if (this.captchaEnabled) {
           this.codeUrl = 'data:image/gif;base64,' + res.img
           this.registerForm.uuid = res.uuid
@@ -221,5 +272,16 @@ export default {
 }
 .register-code-img {
   height: 38px;
+}
+
+.sms-code-row {
+  display: grid;
+  grid-template-columns: 1fr 112px;
+  gap: 10px;
+}
+
+.sms-code-btn {
+  height: 38px;
+  padding: 0 10px;
 }
 </style>
